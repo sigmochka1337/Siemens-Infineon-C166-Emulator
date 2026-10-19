@@ -61,6 +61,11 @@ Fetched fetch(const IMemory& mem, uint32_t address);
 std::optional<Instruction> decode(const Fetched& fetched, const DecodeTable& table,
                                   DecodeError& error);
 
+// Разобрать инструкцию по адресу, ничего не выполняя.
+// Нужно отладчику (показать текущую инструкцию) и будущему экспорту в IDA.
+std::optional<Instruction> disassembleOne(const IMemory& mem, uint32_t address,
+                                          const DecodeTable& table, DecodeError& error);
+
 // Текстовое представление для отладчика (ТЗ, «Обязательно», п. 7).
 std::string format(const Instruction& ins);
 

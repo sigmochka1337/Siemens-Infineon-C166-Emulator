@@ -143,6 +143,12 @@ std::optional<Instruction> decode(const Fetched& fetched, const DecodeTable& tab
     return ins;
 }
 
+std::optional<Instruction> disassembleOne(const IMemory& mem, uint32_t address,
+                                          const DecodeTable& table, DecodeError& error) {
+    const Fetched fetched = fetch(mem, address);
+    return decode(fetched, table, error);
+}
+
 std::string format(const Instruction& ins) {
     std::string text = opName(ins.op);
     for (uint8_t i = 0; i < ins.nops; ++i) {

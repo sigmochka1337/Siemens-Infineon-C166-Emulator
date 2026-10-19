@@ -17,6 +17,10 @@ else()
     target_compile_options(c166_core PRIVATE -Wall -Wextra -Wpedantic)
 endif()
 
+# Демонстрационный CLI: байты -> инструкция. Не требует процессора.
+add_executable(c166dis tools/c166dis.cpp)
+target_link_libraries(c166dis PRIVATE c166_core)
+
 enable_testing()
 
 add_executable(test_decode tests/test_decode.cpp)
