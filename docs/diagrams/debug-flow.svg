@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="420">
+<style>.b{stroke:#263238;stroke-width:2;rx:14}.t{font:bold 19px sans-serif;fill:#fff}.a{stroke:#263238;stroke-width:3;marker-end:url(#m)}</style>
+<defs><marker id="m" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L10 3 0 6Z"/></marker></defs>
+<rect width="1100" height="420" fill="#fafafa"/><text x="550" y="38" text-anchor="middle" font="bold 28px sans-serif" fill="#263238">Debug Command Flow</text>
+<rect class="b" x="35" y="105" width="200" height="85" fill="#455a64"/><text class="t" x="135" y="155" text-anchor="middle">CLI / GDB / IDA</text>
+<rect class="b" x="280" y="105" width="220" height="85" fill="#1976d2"/><text class="t" x="390" y="155" text-anchor="middle">DebuggerSession</text>
+<rect class="b" x="545" y="105" width="250" height="85" fill="#388e3c"/><text class="t" x="670" y="155" text-anchor="middle">ExecutionController</text>
+<rect class="b" x="840" y="105" width="220" height="85" fill="#f9a825"/><text class="t" x="950" y="155" text-anchor="middle">Breakpoints / Trace</text>
+<line class="a" x1="235" y1="147" x2="275" y2="147"/><line class="a" x1="500" y1="147" x2="540" y2="147"/><line class="a" x1="795" y1="147" x2="835" y2="147"/>
+<rect class="b" x="230" y="275" width="640" height="75" fill="#8e24aa"/><text class="t" x="550" y="320" text-anchor="middle">Emulator::step() → StepResult → ExecutionResult</text>
+<line class="a" x1="670" y1="190" x2="550" y2="270"/>
+</svg>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="360">
+<style>.b{stroke:#263238;stroke-width:2;rx:14}.t{font:bold 20px sans-serif;fill:#fff}.a{stroke:#263238;stroke-width:3;marker-end:url(#m)}</style>
+<defs><marker id="m" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L10 3 0 6Z"/></marker></defs>
+<rect width="1100" height="360" fill="#fafafa"/><text x="550" y="38" text-anchor="middle" font="bold 28px sans-serif" fill="#263238">Fetch → Decode → Execute → Commit</text>
+<rect class="b" x="35" y="105" width="180" height="85" fill="#455a64"/><text class="t" x="125" y="155" text-anchor="middle">Fetch</text>
+<rect class="b" x="255" y="105" width="180" height="85" fill="#1976d2"/><text class="t" x="345" y="155" text-anchor="middle">Decode</text>
+<rect class="b" x="475" y="105" width="180" height="85" fill="#388e3c"/><text class="t" x="565" y="155" text-anchor="middle">Execute</text>
+<rect class="b" x="695" y="105" width="180" height="85" fill="#f9a825"/><text class="t" x="785" y="155" text-anchor="middle">Commit</text>
+<rect class="b" x="915" y="105" width="150" height="85" fill="#8e24aa"/><text class="t" x="990" y="155" text-anchor="middle">Trace</text>
+<line class="a" x1="215" y1="147" x2="250" y2="147"/><line class="a" x1="435" y1="147" x2="470" y2="147"/><line class="a" x1="655" y1="147" x2="690" y2="147"/><line class="a" x1="875" y1="147" x2="910" y2="147"/>
+<text x="550" y="260" text-anchor="middle" font="18px sans-serif" fill="#263238">Все обращения к памяти проходят через MemoryBus: DPP • endian • права • MMIO</text>
+</svg>

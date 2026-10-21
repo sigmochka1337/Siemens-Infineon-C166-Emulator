@@ -1,15 +1,9 @@
 #pragma once
 
-class PSW
-{
-    bool negative;
-    bool carry;
-    bool overflow;
-    bool zero;
-    bool usr0;
+#include "src/includes/cpu_state.h"
 
-    bool &N = negative;
-    bool &C = carry;
-    bool &V = overflow;
-    bool &Z = zero;
-};
+namespace c166 {
+
+using ProcessorStatusWord = Psw;
+
+}  // namespace c166

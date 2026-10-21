@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="600">
+<style>.b{stroke:#263238;stroke-width:2;rx:14}.t{font:bold 22px sans-serif;fill:#fff}.a{stroke:#263238;stroke-width:3;marker-end:url(#m)}</style>
+<defs><marker id="m" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L10 3 0 6Z"/></marker></defs>
+<rect width="900" height="600" fill="#fafafa"/>
+<text x="450" y="38" text-anchor="middle" font="bold 28px sans-serif" fill="#263238">C166 Emulator</text>
+<rect class="b" x="90" y="65" width="720" height="75" fill="#455a64"/><text class="t" x="450" y="110" text-anchor="middle">Frontend: CLI • GDB • IDA • Tests</text>
+<line class="a" x1="450" y1="140" x2="450" y2="175"/>
+<rect class="b" x="90" y="180" width="720" height="90" fill="#1976d2"/><text class="t" x="450" y="220" text-anchor="middle">Debug API</text><text class="t" x="450" y="250" text-anchor="middle">Session • Controller • Breakpoints • Inspector • Trace</text>
+<line class="a" x1="450" y1="270" x2="450" y2="305"/>
+<rect class="b" x="90" y="310" width="720" height="90" fill="#388e3c"/><text class="t" x="450" y="350" text-anchor="middle">Core</text><text class="t" x="450" y="380" text-anchor="middle">CpuState • Emulator • Decoder • Executor</text>
+<line class="a" x1="450" y1="400" x2="450" y2="435"/>
+<rect class="b" x="55" y="440" width="370" height="85" fill="#f9a825"/><text class="t" x="240" y="490" text-anchor="middle">ISA: ALU • Stack • Branches</text>
+<rect class="b" x="475" y="440" width="370" height="85" fill="#8e24aa"/><text class="t" x="660" y="490" text-anchor="middle">Memory: Bus • DPP • MMIO</text>
+</svg>

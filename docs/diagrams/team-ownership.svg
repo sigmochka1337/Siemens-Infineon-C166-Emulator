@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700">
+<style>
+.b{stroke:#263238;stroke-width:2;rx:14}.t{font:bold 22px sans-serif;fill:#fff}.s{font:17px sans-serif;fill:#263238}.a{stroke:#263238;stroke-width:3;marker-end:url(#m)}
+</style>
+<defs><marker id="m" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L10 3 0 6Z"/></marker></defs>
+<rect width="1200" height="700" fill="#fafafa"/>
+<text x="600" y="42" text-anchor="middle" font="bold 30px sans-serif" fill="#263238">Team Ownership and Contracts</text>
+
+<rect class="b" x="410" y="75" width="380" height="80" fill="#455a64"/>
+<text class="t" x="600" y="122" text-anchor="middle">Core contracts</text>
+<text class="t" x="600" y="148" text-anchor="middle">CpuState • Result • MemoryBus</text>
+
+<rect class="b" x="45" y="250" width="245" height="150" fill="#1976d2"/>
+<text class="t" x="167" y="290" text-anchor="middle">Участник 1</text>
+<text class="t" x="167" y="322" text-anchor="middle">Fetch + Decode</text>
+<text class="t" x="167" y="355" text-anchor="middle">bytes → instruction</text>
+<text class="t" x="167" y="382" text-anchor="middle">no state mutation</text>
+
+<rect class="b" x="325" y="250" width="245" height="150" fill="#388e3c"/>
+<text class="t" x="447" y="290" text-anchor="middle">Участник 2</text>
+<text class="t" x="447" y="322" text-anchor="middle">Executor</text>
+<text class="t" x="447" y="355" text-anchor="middle">instruction → state</text>
+<text class="t" x="447" y="382" text-anchor="middle">ALU • stack • branch</text>
+
+<rect class="b" x="605" y="250" width="245" height="150" fill="#8e24aa"/>
+<text class="t" x="727" y="290" text-anchor="middle">Участник 3</text>
+<text class="t" x="727" y="322" text-anchor="middle">Debugger</text>
+<text class="t" x="727" y="355" text-anchor="middle">run • step • break</text>
+<text class="t" x="727" y="382" text-anchor="middle">inspect • trace</text>
+
+<rect class="b" x="885" y="250" width="245" height="150" fill="#f9a825"/>
+<text class="t" x="1007" y="290" text-anchor="middle">Участник 4</text>
+<text class="t" x="1007" y="322" text-anchor="middle">Memory</text>
+<text class="t" x="1007" y="355" text-anchor="middle">read/write • DPP</text>
+<text class="t" x="1007" y="382" text-anchor="middle">load • MMIO</text>
+
+<line class="a" x1="500" y1="155" x2="190" y2="245"/>
+<line class="a" x1="550" y1="155" x2="450" y2="245"/>
+<line class="a" x1="650" y1="155" x2="730" y2="245"/>
+<line class="a" x1="700" y1="155" x2="1000" y2="245"/>
+
+<rect x="120" y="500" width="960" height="100" fill="#fff" stroke="#78909c" stroke-width="2" rx="14"/>
+<text class="s" x="600" y="540" text-anchor="middle">Интеграция: Memory → Fetch/Decode → Executor → Debugger</text>
+<text class="s" x="600" y="572" text-anchor="middle">Каждый модуль отдаёт заголовок, реализацию, unit-тесты и один integration-тест</text>
+</svg>
