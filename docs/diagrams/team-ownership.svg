@@ -10,23 +10,23 @@
 <text class="t" x="600" y="122" text-anchor="middle">Core contracts</text>
 <text class="t" x="600" y="148" text-anchor="middle">CpuState • Result • MemoryBus</text>
 
-<rect class="b" x="45" y="250" width="245" height="150" fill="#1976d2"/>
+<rect class="b" x="45" y="250" width="245" height="150" fill="#8e24aa"/>
 <text class="t" x="167" y="290" text-anchor="middle">Участник 1</text>
-<text class="t" x="167" y="322" text-anchor="middle">Fetch + Decode</text>
-<text class="t" x="167" y="355" text-anchor="middle">bytes → instruction</text>
-<text class="t" x="167" y="382" text-anchor="middle">no state mutation</text>
+<text class="t" x="167" y="322" text-anchor="middle">CLI + Debugger</text>
+<text class="t" x="167" y="355" text-anchor="middle">run • step • break</text>
+<text class="t" x="167" y="382" text-anchor="middle">inspect • trace</text>
 
-<rect class="b" x="325" y="250" width="245" height="150" fill="#388e3c"/>
+<rect class="b" x="325" y="250" width="245" height="150" fill="#1976d2"/>
 <text class="t" x="447" y="290" text-anchor="middle">Участник 2</text>
-<text class="t" x="447" y="322" text-anchor="middle">Executor</text>
-<text class="t" x="447" y="355" text-anchor="middle">instruction → state</text>
-<text class="t" x="447" y="382" text-anchor="middle">ALU • stack • branch</text>
+<text class="t" x="447" y="322" text-anchor="middle">Fetch + Decoder</text>
+<text class="t" x="447" y="355" text-anchor="middle">bytes → instruction</text>
+<text class="t" x="447" y="382" text-anchor="middle">no state mutation</text>
 
-<rect class="b" x="605" y="250" width="245" height="150" fill="#8e24aa"/>
+<rect class="b" x="605" y="250" width="245" height="150" fill="#388e3c"/>
 <text class="t" x="727" y="290" text-anchor="middle">Участник 3</text>
-<text class="t" x="727" y="322" text-anchor="middle">Debugger</text>
-<text class="t" x="727" y="355" text-anchor="middle">run • step • break</text>
-<text class="t" x="727" y="382" text-anchor="middle">inspect • trace</text>
+<text class="t" x="727" y="322" text-anchor="middle">Executor</text>
+<text class="t" x="727" y="355" text-anchor="middle">instruction → state</text>
+<text class="t" x="727" y="382" text-anchor="middle">ALU • stack • branch</text>
 
 <rect class="b" x="885" y="250" width="245" height="150" fill="#f9a825"/>
 <text class="t" x="1007" y="290" text-anchor="middle">Участник 4</text>
@@ -40,6 +40,6 @@
 <line class="a" x1="700" y1="155" x2="1000" y2="245"/>
 
 <rect x="120" y="500" width="960" height="100" fill="#fff" stroke="#78909c" stroke-width="2" rx="14"/>
-<text class="s" x="600" y="540" text-anchor="middle">Интеграция: Memory → Fetch/Decode → Executor → Debugger</text>
+<text class="s" x="600" y="540" text-anchor="middle">Интеграция: Memory → Fetch/Decode → Executor → CLI/Debugger</text>
 <text class="s" x="600" y="572" text-anchor="middle">Каждый модуль отдаёт заголовок, реализацию, unit-тесты и один integration-тест</text>
 </svg>

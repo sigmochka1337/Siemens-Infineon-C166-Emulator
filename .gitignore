@@ -51,3 +51,6 @@ desktop.ini
 *.tmp
 *.temp
 /tmp/
+
+# Other
+architecture_presentation.md

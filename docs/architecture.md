@@ -1,35 +1,35 @@
 # Архитектура эмулятора C166
 
+Сценарий доклада и расширенные визуализации находятся в
+[`docs/architecture_presentation.md`](architecture_presentation.md).
+
 Каркас фиксирует границы, по которым четыре участника могут работать
-параллельно. Заголовки в `src/includes/` являются API; реализация конкретного
+параллельно. Заголовки в `src2/interfaces/` являются API; реализация конкретного
 модуля может меняться без изменения соседних компонентов.
 
 ## Владение и зависимости
 
 ```mermaid
 flowchart TD
-  Frontend["CLI / GDB / тесты"] --> Debugger["Debugger\nIDebugger"]
-  Debugger --> Executor["Executor\nIExecutor"]
-  Executor --> Decode["Fetch + Decode\nInstruction"]
-  Executor --> State["CpuState"]
-  Executor --> Memory["Memory\nIMemory"]
+  Frontend["CLI / Debugger"] --> Core["ICPUCore"]
+  Core --> Fetch["IFetcher"]
+  Core --> Decode["IDecoder"]
+  Core --> Executor["IExecutor"]
+  Fetch --> Memory["IMemoryBus"]
   Decode --> Memory
-  Debugger --> Trace["Trace\nITraceSink"]
-  Debugger --> State
-  Debugger --> Memory
+  Decode --> Registers["IRegisterBus"]
+  Executor --> Memory
+  Executor --> Registers
 ```
 
-* **Fetch + Decode** читает окно байт и строит `Instruction`; состояние не
-  изменяется.
-* **Executor** владеет переходом `IP`, регистрами, PSW и стеком во время
-  выполнения. `step()` выполняет одну инструкцию, `execute()` — декодированную.
-  Для реализации конкретных групп инструкций он может делегировать операции
-  интерфейсам `IAlu`, `IBitProcessor`, `IStack`, `IDataTransfer` и
-  `IControlInstructions`.
-* **Memory** — единственный способ доступа к памяти. Здесь добавляются DPP,
-  выравнивание и MMIO.
-* **Debugger** хранит брейкпоинты и управляет `step(N)`, `run()`, `stepInto()`
-  и `stepOut()`.
+* **Fetch + Decode** читает окно байт и строит `Instruction`; регистры, PSW и
+  память не изменяются.
+* **Executor** реализует семантику инструкций, переходы, стек и флаги через
+  `IRegisterBus` и `IMemoryBus`.
+* **Memory** — единственный способ доступа к физической памяти. Здесь
+  проверяются границы, endian, DPP, права регионов и MMIO.
+* **CLI + Debugger** хранит брейкпоинты и управляет `Tick`, `run`, `step`,
+  snapshot и trace, но не исполняет opcode.
 * **Trace** получает записи после шага и может писать весь запуск или N шагов.
 
 ## Поток одного шага
@@ -37,18 +37,23 @@ flowchart TD
 ```mermaid
 sequenceDiagram
   participant D as Debugger
-  participant E as Executor
-  participant F as Fetch/Decode
-  participant M as Memory
-  participant S as CpuState
-  D->>E: step(state, memory)
-  E->>F: fetch + decode(S.physicalPc())
-  F->>M: read8(...)
-  M-->>F: bytes
-  F-->>E: Instruction
-  E->>S: execute instruction
-  E-->>D: StepResult + new PC
-  D->>D: breakpoint / trace / snapshot
+  participant K as ICPUCore
+  participant F as IFetcher
+  participant X as IDecoder
+  participant E as IExecutor
+  participant M as IMemoryBus
+  D->>K: Tick()
+  K->>F: Fetch(CSP:IP, M)
+  F->>M: Read8(code address)
+  M-->>F: bytes / FetchError
+  F-->>K: RawInstruction
+  K->>X: Decode(raw, M, registers, constants)
+  X-->>K: Instruction
+  K->>E: Execute(instruction, M, registers, constants)
+  E->>M: Read/Write data or stack
+  E-->>K: ExecutionResult
+  K-->>D: result / snapshot
+  D->>D: breakpoint / trace
 ```
 
 ## Отладочные операции

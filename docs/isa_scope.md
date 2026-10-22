@@ -46,7 +46,7 @@
 | CALL, CALLA, CALLI, CALLR, CALLS, PCALL | caddr / rel / reg / seg,caddr | v1 |
 | RET, RETS, RETP | — / Rw | v1 |
 | JMPA, JMPI, JMPR, JMPS | caddr / reg / rel / seg,caddr | v1 |
-| JB, JNB, JBC, JNBC | bitaddr, rel | v1 |
+| JB, JNB, JBC, JNBS | bitaddr, rel | v1 |
 
 ## Память и пересылки
 
@@ -66,7 +66,7 @@
 2. Соглашение о раскладке полей во втором байте (какой ниббл — источник,
    какой — приёмник) для каждой формы.
 3. Правило sign-extend для `rel8` у `JMPR`/`CALLR` и диапазон перехода.
-4. Формат битового адреса для `JB/JNB/JBC/JNBC`.
+4. Формат битового адреса для `JB/JNB/JBC/JNBS`.
 5. Список «неподдерживаемых» опкодов, на которых эмулятор обязан остановиться
    (ТЗ, «Обязательно», п. 9).
 
