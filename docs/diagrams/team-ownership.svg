@@ -1,45 +1,43 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700">
-<style>
-.b{stroke:#263238;stroke-width:2;rx:14}.t{font:bold 22px sans-serif;fill:#fff}.s{font:17px sans-serif;fill:#263238}.a{stroke:#263238;stroke-width:3;marker-end:url(#m)}
-</style>
-<defs><marker id="m" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L10 3 0 6Z"/></marker></defs>
-<rect width="1200" height="700" fill="#fafafa"/>
-<text x="600" y="42" text-anchor="middle" font="bold 30px sans-serif" fill="#263238">Team Ownership and Contracts</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="670" viewBox="0 0 1280 670" role="img" aria-labelledby="title">
+<title id="title">Четыре участника и общий договор</title>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L10 5 L0 10 Z" fill="#475569"/></marker></defs>
+<style>text{font-family:DejaVu Sans,sans-serif} .edge{fill:none;stroke:#475569;stroke-width:2.2;} .link{fill:none;stroke:#94a3b8;stroke-width:2;stroke-dasharray:6 5} .heading{font-size:29px;font-weight:700;fill:#0f172a} .label{font-size:17px;fill:#334155} .box-title{font-size:21px;font-weight:700;fill:white} .box-body{font-size:16px;fill:white}</style>
+<rect width="1280" height="670" fill="#f8fafc"/>
+<text class="heading" x="640" y="44" text-anchor="middle">Четыре участника и общий договор</text>
+<rect x="190" y="80" width="900" height="95" rx="12" fill="#334155"/>
+<text class="box-title" x="640.0" y="113" text-anchor="middle">src/common + src/interfaces</text>
+<text class="box-body" x="640.0" y="144" text-anchor="middle">Instruction · Result&lt;T&gt; · адреса · PSW · состояние · StepResult</text>
+<path class="link" d="M640 175 V215 H167.5 V250"/>
+<path class="link" d="M640 175 V215 H482.5 V250"/>
+<path class="link" d="M640 175 V215 H797.5 V250"/>
+<path class="link" d="M640 175 V215 H1112.5 V250"/>
+<rect x="25" y="250" width="285" height="200" rx="12" fill="#166534"/>
+<text class="box-title" x="167.5" y="283" text-anchor="middle">1 · Executor</text>
+<text class="box-body" x="167.5" y="314" text-anchor="middle">src/executor</text>
+<text class="box-body" x="167.5" y="341" text-anchor="middle">Instruction -&gt; ExecutionResult</text>
+<text class="box-body" x="167.5" y="368" text-anchor="middle">операнды · PSW · стек · EXT</text>
+<text class="box-body" x="167.5" y="395" text-anchor="middle">изменяет PC после команды</text>
+<rect x="340" y="250" width="285" height="200" rx="12" fill="#1d4ed8"/>
+<text class="box-title" x="482.5" y="283" text-anchor="middle">2 · Fetcher + Decoder</text>
+<text class="box-body" x="482.5" y="314" text-anchor="middle">src/decoder</text>
+<text class="box-body" x="482.5" y="341" text-anchor="middle">bytes -&gt; Instruction</text>
+<text class="box-body" x="482.5" y="368" text-anchor="middle">кодировки · длины 2/4</text>
+<text class="box-body" x="482.5" y="395" text-anchor="middle">Decoder не читает CPU state</text>
+<rect x="655" y="250" width="285" height="200" rx="12" fill="#92400e"/>
+<text class="box-title" x="797.5" y="283" text-anchor="middle">3 · Memory</text>
+<text class="box-body" x="797.5" y="314" text-anchor="middle">src/memory</text>
+<text class="box-body" x="797.5" y="341" text-anchor="middle">IMachine · физическая шина</text>
+<text class="box-body" x="797.5" y="368" text-anchor="middle">RAM / GPR / SFR согласованы</text>
+<text class="box-body" x="797.5" y="395" text-anchor="middle">CP · DPP · resolver · маски</text>
+<rect x="970" y="250" width="285" height="200" rx="12" fill="#7e22ce"/>
+<text class="box-title" x="1112.5" y="283" text-anchor="middle">4 · Debugger + Core</text>
+<text class="box-body" x="1112.5" y="314" text-anchor="middle">src/debugger · src/core · tools</text>
+<text class="box-body" x="1112.5" y="341" text-anchor="middle">Run / Step · Tick · сборка</text>
+<text class="box-body" x="1112.5" y="368" text-anchor="middle">breakpoints · trace · inspect</text>
+<text class="box-body" x="1112.5" y="395" text-anchor="middle">PC сам не увеличивает</text>
+<rect x="25" y="500" width="1230" height="125" rx="10" fill="#e2e8f0"/>
+<text class="label" x="640.0" y="529" text-anchor="middle">CpuCore -&gt; IFetcher / IDecoder / IExecutor / IMachine</text>
+<text class="label" x="640.0" y="557" text-anchor="middle">Fetcher -&gt; IDecoder + IMemoryBus; Executor -&gt; IMachine</text>
+<text class="label" x="640.0" y="585" text-anchor="middle">Общие контракты согласуют все затронутые участники; внутри модуля владелец работает независимо.</text>
 
-<rect class="b" x="410" y="75" width="380" height="80" fill="#455a64"/>
-<text class="t" x="600" y="122" text-anchor="middle">Core contracts</text>
-<text class="t" x="600" y="148" text-anchor="middle">CpuState • Result • MemoryBus</text>
-
-<rect class="b" x="45" y="250" width="245" height="150" fill="#8e24aa"/>
-<text class="t" x="167" y="290" text-anchor="middle">Участник 1</text>
-<text class="t" x="167" y="322" text-anchor="middle">CLI + Debugger</text>
-<text class="t" x="167" y="355" text-anchor="middle">run • step • break</text>
-<text class="t" x="167" y="382" text-anchor="middle">inspect • trace</text>
-
-<rect class="b" x="325" y="250" width="245" height="150" fill="#1976d2"/>
-<text class="t" x="447" y="290" text-anchor="middle">Участник 2</text>
-<text class="t" x="447" y="322" text-anchor="middle">Fetch + Decoder</text>
-<text class="t" x="447" y="355" text-anchor="middle">bytes → instruction</text>
-<text class="t" x="447" y="382" text-anchor="middle">no state mutation</text>
-
-<rect class="b" x="605" y="250" width="245" height="150" fill="#388e3c"/>
-<text class="t" x="727" y="290" text-anchor="middle">Участник 3</text>
-<text class="t" x="727" y="322" text-anchor="middle">Executor</text>
-<text class="t" x="727" y="355" text-anchor="middle">instruction → state</text>
-<text class="t" x="727" y="382" text-anchor="middle">ALU • stack • branch</text>
-
-<rect class="b" x="885" y="250" width="245" height="150" fill="#f9a825"/>
-<text class="t" x="1007" y="290" text-anchor="middle">Участник 4</text>
-<text class="t" x="1007" y="322" text-anchor="middle">Memory</text>
-<text class="t" x="1007" y="355" text-anchor="middle">read/write • DPP</text>
-<text class="t" x="1007" y="382" text-anchor="middle">load • MMIO</text>
-
-<line class="a" x1="500" y1="155" x2="190" y2="245"/>
-<line class="a" x1="550" y1="155" x2="450" y2="245"/>
-<line class="a" x1="650" y1="155" x2="730" y2="245"/>
-<line class="a" x1="700" y1="155" x2="1000" y2="245"/>
-
-<rect x="120" y="500" width="960" height="100" fill="#fff" stroke="#78909c" stroke-width="2" rx="14"/>
-<text class="s" x="600" y="540" text-anchor="middle">Интеграция: Memory → Fetch/Decode → Executor → CLI/Debugger</text>
-<text class="s" x="600" y="572" text-anchor="middle">Каждый модуль отдаёт заголовок, реализацию, unit-тесты и один integration-тест</text>
 </svg>

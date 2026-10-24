@@ -2,13 +2,16 @@
 /build/
 /build-*/
 /cmake-build-*/
-/CMakeFiles/
-/CMakeCache.txt
-/CTestTestfile.cmake
-/cmake_install.cmake
-/Makefile
-/compile_commands.json
-/Testing/
+**/CMakeFiles/
+**/CMakeCache.txt
+**/CTestTestfile.cmake
+**/cmake_install.cmake
+**/Makefile
+**/build.ninja
+**/.ninja_*
+**/compile_commands.json
+**/Testing/
+**/header_checks/
 
 # Generated binaries and intermediate objects
 *.a
@@ -52,5 +55,13 @@ desktop.ini
 *.temp
 /tmp/
 
-# Other
-architecture_presentation.md
+# Coverage and tooling caches
+.cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Local-only documents and generated reports
+*.generated.md
+*.generated.pdf

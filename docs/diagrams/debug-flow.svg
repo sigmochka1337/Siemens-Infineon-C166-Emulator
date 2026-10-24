@@ -1,12 +1,63 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="420">
-<style>.b{stroke:#263238;stroke-width:2;rx:14}.t{font:bold 19px sans-serif;fill:#fff}.a{stroke:#263238;stroke-width:3;marker-end:url(#m)}</style>
-<defs><marker id="m" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto"><path d="M0 0L10 3 0 6Z"/></marker></defs>
-<rect width="1100" height="420" fill="#fafafa"/><text x="550" y="38" text-anchor="middle" font="bold 28px sans-serif" fill="#263238">Debug Command Flow</text>
-<rect class="b" x="35" y="105" width="200" height="85" fill="#455a64"/><text class="t" x="135" y="155" text-anchor="middle">CLI / GDB / IDA</text>
-<rect class="b" x="280" y="105" width="220" height="85" fill="#1976d2"/><text class="t" x="390" y="155" text-anchor="middle">DebuggerSession</text>
-<rect class="b" x="545" y="105" width="250" height="85" fill="#388e3c"/><text class="t" x="670" y="155" text-anchor="middle">ExecutionController</text>
-<rect class="b" x="840" y="105" width="220" height="85" fill="#f9a825"/><text class="t" x="950" y="155" text-anchor="middle">Breakpoints / Trace</text>
-<line class="a" x1="235" y1="147" x2="275" y2="147"/><line class="a" x1="500" y1="147" x2="540" y2="147"/><line class="a" x1="795" y1="147" x2="835" y2="147"/>
-<rect class="b" x="230" y="275" width="640" height="75" fill="#8e24aa"/><text class="t" x="550" y="320" text-anchor="middle">Emulator::step() → StepResult → ExecutionResult</text>
-<line class="a" x1="670" y1="190" x2="550" y2="270"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="710" viewBox="0 0 1280 710" role="img" aria-labelledby="title">
+<title id="title">Управление исполнением и безопасный осмотр</title>
+<defs><marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="5" orient="auto" markerUnits="userSpaceOnUse"><path d="M0 0 L10 5 L0 10 Z" fill="#475569"/></marker></defs>
+<style>text{font-family:DejaVu Sans,sans-serif} .edge{fill:none;stroke:#475569;stroke-width:2.2;} .link{fill:none;stroke:#94a3b8;stroke-width:2;stroke-dasharray:6 5} .heading{font-size:29px;font-weight:700;fill:#0f172a} .label{font-size:17px;fill:#334155} .box-title{font-size:21px;font-weight:700;fill:white} .box-body{font-size:16px;fill:white}</style>
+<rect width="1280" height="710" fill="#f8fafc"/>
+<text class="heading" x="640" y="44" text-anchor="middle">Управление исполнением и безопасный осмотр</text>
+<rect x="30" y="100" width="250" height="100" rx="12" fill="#334155"/>
+<text class="box-title" x="155.0" y="133" text-anchor="middle">Клиент / tools</text>
+<text class="box-body" x="155.0" y="164" text-anchor="middle">Run(options) / Step(N)</text>
+<text class="box-body" x="155.0" y="191" text-anchor="middle">через IEmulator</text>
+<rect x="345" y="100" width="260" height="100" rx="12" fill="#7e22ce"/>
+<text class="box-title" x="475.0" y="133" text-anchor="middle">Debugger · 4</text>
+<text class="box-body" x="475.0" y="164" text-anchor="middle">критерии остановки</text>
+<text class="box-body" x="475.0" y="191" text-anchor="middle">вызовы ICPUCore</text>
+<rect x="670" y="100" width="260" height="100" rx="12" fill="#7e22ce"/>
+<text class="box-title" x="800.0" y="133" text-anchor="middle">CpuCore · 4</text>
+<text class="box-body" x="800.0" y="164" text-anchor="middle">Tick()</text>
+<text class="box-body" x="800.0" y="191" text-anchor="middle">fetch / decode / execute</text>
+<rect x="995" y="100" width="250" height="100" rx="12" fill="#334155"/>
+<text class="box-title" x="1120.0" y="133" text-anchor="middle">StepResult</text>
+<text class="box-body" x="1120.0" y="164" text-anchor="middle">статус · PC · причина</text>
+<text class="box-body" x="1120.0" y="191" text-anchor="middle">инструкция · flow</text>
+<path class="edge" d="M280 150 H345"/>
+<path class="edge" d="M605 150 H670"/>
+<path class="edge" d="M930 150 H995"/>
+<path class="edge" d="M1120 200 V290"/>
+<path class="edge" d="M1120 240 H317 V290"/>
+<rect x="995" y="290" width="250" height="105" rx="12" fill="#7e22ce"/>
+<text class="box-title" x="1120.0" y="323" text-anchor="middle">ITraceSink</text>
+<text class="box-body" x="1120.0" y="354" text-anchor="middle">OnStep(result, after)</text>
+<text class="box-body" x="1120.0" y="381" text-anchor="middle">после попытки шага</text>
+<rect x="30" y="290" width="575" height="105" rx="12" fill="#334155"/>
+<text class="box-title" x="317.5" y="323" text-anchor="middle">RunResult</text>
+<text class="box-body" x="317.5" y="354" text-anchor="middle">причина остановки + число завершённых инструкций</text>
+<text class="box-body" x="317.5" y="381" text-anchor="middle">limit / breakpoint / stop address / fault / trap</text>
+<rect x="670" y="290" width="260" height="105" rx="10" fill="#e2e8f0"/>
+<text class="label" x="800.0" y="319" text-anchor="middle">Run: проверка ДО Tick.</text>
+<text class="label" x="800.0" y="347" text-anchor="middle">Step проходит текущий</text>
+<text class="label" x="800.0" y="375" text-anchor="middle">breakpoint.</text>
+<rect x="30" y="455" width="250" height="105" rx="12" fill="#334155"/>
+<text class="box-title" x="155.0" y="488" text-anchor="middle">Осмотр состояния</text>
+<text class="box-body" x="155.0" y="519" text-anchor="middle">PeekMemory / Snapshot</text>
+<text class="box-body" x="155.0" y="546" text-anchor="middle">InspectInstruction</text>
+<rect x="345" y="455" width="585" height="105" rx="12" fill="#7e22ce"/>
+<text class="box-title" x="637.5" y="488" text-anchor="middle">ICPUCore · безопасный доступ</text>
+<text class="box-body" x="637.5" y="519" text-anchor="middle">PeekMemory -&gt; Peek8; Snapshot -&gt; снимок состояния</text>
+<text class="box-body" x="637.5" y="546" text-anchor="middle">InspectInstruction -&gt; Fetch/Decode через Peek-адаптер</text>
+<rect x="995" y="455" width="250" height="105" rx="12" fill="#92400e"/>
+<text class="box-title" x="1120.0" y="488" text-anchor="middle">Memory · 3</text>
+<text class="box-body" x="1120.0" y="519" text-anchor="middle">Peek8 / Snapshot</text>
+<text class="box-body" x="1120.0" y="546" text-anchor="middle">без гостевых эффектов</text>
+<path class="edge" d="M280 507 H345"/>
+<path class="edge" d="M930 507 H995"/>
+<rect x="30" y="605" width="1215" height="65" rx="10" fill="#e2e8f0"/>
+<text class="label" x="637.5" y="634" text-anchor="middle">Осмотр не исполняет команду, не потребляет ввод и не сбрасывает аппаратные флаги.</text>
+<polygon points="345,150 335,145 335,155" fill="#475569"/>
+<polygon points="670,150 660,145 660,155" fill="#475569"/>
+<polygon points="995,150 985,145 985,155" fill="#475569"/>
+<polygon points="1120,290 1115,280 1125,280" fill="#475569"/>
+<polygon points="317,290 312,280 322,280" fill="#475569"/>
+<polygon points="345,507 335,502 335,512" fill="#475569"/>
+<polygon points="995,507 985,502 985,512" fill="#475569"/>
 </svg>

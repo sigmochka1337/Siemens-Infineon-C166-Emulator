@@ -1,22 +1,20 @@
 #pragma once
+
 #include <span>
 
-#include "interfaces/decoder.h"
-#include "interfaces/executor.h"
-#include "interfaces/fetcher.h"
-#include "interfaces/memory.h"
-#include "interfaces/raw_memory.h"
+#include "common/execution.h"
 
 namespace c166 {
 class ICPUCore {
  public:
-  virtual ExecutionResult Tick() = 0;
+  virtual StepResult Tick() = 0;
   virtual void Reset() = 0;
-  virtual void SetEntryPoint(CodeAddress address) = 0;
-  virtual CodeAddress GetEntryPoint() const = 0;
-  virtual bool LoadBinary(PhysicalAddress load_address, std::span<const Byte> bytes) = 0;
-  virtual CPUSnapshot Snapshot() const = 0;
-
+  virtual Result<void> SetEntryPoint(CodeAddress address) = 0;
+  virtual Result<void> LoadBinary(PhysicalAddress address, std::span<const Byte> bytes) = 0;
+  virtual Result<void> WriteRegister(RegisterId id, Word value) = 0;
+  virtual Result<Byte> PeekMemory(PhysicalAddress address) const = 0;
+  virtual Result<Instruction> InspectInstruction(CodeAddress address) const = 0;
+  virtual CoreSnapshot Snapshot() const = 0;
   virtual ~ICPUCore() = default;
 };
 }  // namespace c166

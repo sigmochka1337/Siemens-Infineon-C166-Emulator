@@ -1,62 +1,46 @@
 #pragma once
-#include "interfaces/raw_memory.h"
+
+#include <span>
+
+#include "common/result.h"
+#include "common/state.h"
 
 namespace c166 {
+enum class AccessKind : uint8_t { kCode, kData, kStack };
 class IMemoryBus {
  public:
-  virtual WriteResult Write8(PhysicalAddress address, Byte value) = 0;
-  virtual WriteResult Write16(PhysicalAddress address, Word value) = 0;
-  virtual WriteResult Write32(PhysicalAddress address, Dword value) = 0;
-
-  virtual ReadResult<Byte> Read8(PhysicalAddress address) const = 0;
-  virtual ReadResult<Word> Read16(PhysicalAddress address) const = 0;
-  virtual ReadResult<Dword> Read32(PhysicalAddress address) const = 0;
-
+  // CPU reads may have MMIO side effects. Addresses here are physical.
+  virtual Result<Byte> Read8(PhysicalAddress address, AccessKind kind) = 0;
+  virtual Result<Word> Read16(PhysicalAddress address, AccessKind kind) = 0;
+  virtual Result<void> Write8(PhysicalAddress address, Byte value, AccessKind kind) = 0;
+  virtual Result<void> Write16(PhysicalAddress address, Word value, AccessKind kind) = 0;
+  // Inspection must not consume input, clear device flags, or change CPU state.
+  virtual Result<Byte> Peek8(PhysicalAddress address) const = 0;
   virtual ~IMemoryBus() = default;
 };
-
 class IRegisterBus {
  public:
-  virtual Word GetR(uint8_t index) const = 0;
-  virtual void SetR(uint8_t index, Word value) = 0;
-
-  virtual Word GetSP() const = 0;
-  virtual void SetSP(Word value) = 0;
-
-  virtual Byte GetCSP() const = 0;
-  virtual void SetCSP(Byte value) = 0;
-
-  virtual Word GetIP() const = 0;
-  virtual void SetIP(Word value) = 0;
-
-  virtual Word GetDPP(uint8_t index) const = 0;
-  virtual void SetDPP(uint8_t index, Word value) = 0;
-
-  virtual Word GetCP() const = 0;
-  virtual void SetCP(Word value) = 0;
-
-  virtual Word GetPSW() const = 0;
-  virtual void SetPSW(Word value) = 0;
-
-  virtual Word GetMDH() const = 0;
-  virtual void SetMDH(Word value) = 0;
-
-  virtual Word GetMDL() const = 0;
-  virtual void SetMDL(Word value) = 0;
-
+  // Guest reads may affect control registers (e.g. MDL/MDC); use Snapshot to inspect.
+  virtual Result<Word> ReadRegister(RegisterId id) = 0;
+  virtual Result<void> WriteRegister(RegisterId id, Word value) = 0;
+  virtual CodeAddress GetPC() const = 0;
+  // Privileged core/debugger operation, not a guest memory-mapped CSP/IP write.
+  virtual Result<void> SetPC(CodeAddress pc) = 0;
+  virtual ExtensionState GetExtension() const = 0;
+  virtual void SetExtension(ExtensionState state) = 0;
   virtual ~IRegisterBus() = default;
 };
-
-class IConstantBus {
+// One implementation backs both bases: GPR/RAM and SFR/register aliases agree.
+// The core cannot be constructed with unrelated register and memory stores.
+class IMachine : public IMemoryBus, public IRegisterBus {
  public:
-  virtual OperandAddress Store8(Byte value) = 0;
-  virtual OperandAddress Store16(Word value) = 0;
-  virtual OperandAddress Store32(Dword value) = 0;
-
-  virtual ReadResult<Byte> Read8(OperandAddress address) const = 0;
-  virtual ReadResult<Word> Read16(OperandAddress address) const = 0;
-  virtual ReadResult<Dword> Read32(OperandAddress address) const = 0;
-
-  virtual ~IConstantBus() = default;
+  virtual void Reset() = 0;
+  virtual CpuSnapshot Snapshot() const = 0;
+  // Loader validates the whole range before writing; no device side effects.
+  virtual Result<void> LoadBinary(PhysicalAddress address, std::span<const Byte> bytes) = 0;
+  virtual Result<PhysicalAddress> ResolveDataAddress(LogicalAddress address) const = 0;
+  virtual Result<PhysicalAddress> ResolveShortRegister(Byte offset, Width width) const = 0;
+  virtual Result<BitLocation> ResolveBitAddress(BitAddress address) const = 0;
+  ~IMachine() override = default;
 };
 }  // namespace c166
