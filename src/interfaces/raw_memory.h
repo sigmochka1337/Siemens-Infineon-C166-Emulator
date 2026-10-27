@@ -1,13 +1,11 @@
 #pragma once
-
-#include "common/result.h"
-
+#include "types.h"
 namespace c166 {
-// Optional storage backend owned by Memory. CPU clients use IMemoryBus.
-class IRawMemory {
+class IRawMemmory {
  public:
-  virtual Result<Byte> Read8(PhysicalAddress address) const = 0;
-  virtual Result<void> Write8(PhysicalAddress address, Byte value) = 0;
-  virtual ~IRawMemory() = default;
+  virtual ~IRawMemmory() = default;
+
+  virtual Byte Read8() const = 0;
+  virtual void Write8() = 0;
 };
 }  // namespace c166
