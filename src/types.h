@@ -3,6 +3,8 @@
 #include <cstdint>
 #include <format>
 #include <memory>
+#include <string>
+#include <utility>
 #include <vector>
 
 namespace c166 {
@@ -19,12 +21,12 @@ struct CodeAddress {
   Word offset = 0;   // IP
   bool operator==(const CodeAddress&) const = default;
 
-  constexpr PhysicalAddress ToPhysicalAddress() {
+  constexpr PhysicalAddress ToPhysicalAddress() const {
     return (static_cast<PhysicalAddress>(segment) << 16) | offset;
   }
 };
 
-enum RegisterId {
+enum class RegisterId {
   kR0,
   kR1,
   kR2,
@@ -81,7 +83,7 @@ inline constexpr Word kUsr0 = 1u << 6;
 inline constexpr Word kConditionMask = kN | kC | kV | kZ | kE;
 }  // namespace psw
 
-enum Mnemonic {
+enum class Mnemonic {
   kUnknown,
   kNop,
   kMov,
@@ -148,7 +150,7 @@ enum Mnemonic {
   kAtomic,
 };
 
-std::string MnemonicToString();
+std::string MnemonicToString(Mnemonic mnemonic);
 
 class Operand {
  public:
@@ -157,7 +159,7 @@ class Operand {
 };
 
 struct Instruction {
-  Mnemonic mneminc;
+  Mnemonic mnemonic;
   std::vector<std::unique_ptr<Operand>> operands;
 
   std::string ToString() const;

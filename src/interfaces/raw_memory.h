@@ -5,7 +5,7 @@ class IRawMemmory {
  public:
   virtual ~IRawMemmory() = default;
 
-  virtual Byte Read8() const = 0;
-  virtual void Write8() = 0;
+  virtual Byte Read8(PhysicalAddress address) const = 0;
+  virtual void Write8(PhysicalAddress address, Byte value) = 0;
 };
 }  // namespace c166

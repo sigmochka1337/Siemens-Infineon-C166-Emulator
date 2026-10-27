@@ -78,7 +78,7 @@ class UnknownInstruction : public std::exception {
 
   const char* what() const noexcept override { return msg_.c_str(); }
 
-  Instruction GetInstruction() const { return instruction_; }
+  const Instruction& GetInstruction() const { return instruction_; }
 
  private:
   const Instruction& instruction_;
@@ -93,14 +93,14 @@ class InvalidInstruction : public std::exception {
 
   const char* what() const noexcept override { return msg_.c_str(); }
 
-  Instruction GetInstruction() const { return instruction_; }
+  const Instruction& GetInstruction() const { return instruction_; }
 
  private:
   const Instruction& instruction_;
   std::string msg_;
 };
 
-class InvalidBreakpointAddress : std::exception {
+class InvalidBreakpointAddress : public std::exception {
  public:
   explicit InvalidBreakpointAddress(PhysicalAddress address)
       : address_(address),
@@ -115,9 +115,9 @@ class InvalidBreakpointAddress : std::exception {
   std::string msg_;
 };
 
-class BreackpointDoesNotExist : std::exception {
+class BreakpointDoesNotExist : public std::exception {
  public:
-  explicit BreackpointDoesNotExist(PhysicalAddress address)
+  explicit BreakpointDoesNotExist(PhysicalAddress address)
       : address_(address),
         msg_(std::format("Не существует breakpoint по адресу `{:#08X}`", address_)) {}
 

@@ -6,6 +6,6 @@ class IExecutor {
  public:
   virtual ~IExecutor() = default;
 
-  virtual void Execute(Instruction instruction) = 0;
+  virtual void Execute(const Instruction& instruction) = 0;
 };
 }  // namespace c166
