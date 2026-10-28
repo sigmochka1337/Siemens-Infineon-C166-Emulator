@@ -1,9 +1,9 @@
 #pragma once
 #include "types.h"
 namespace c166 {
-class IRawMemmory {
+class IRawMemory {
  public:
-  virtual ~IRawMemmory() = default;
+  virtual ~IRawMemory() = default;
 
   virtual Byte Read8(PhysicalAddress address) const = 0;
   virtual void Write8(PhysicalAddress address, Byte value) = 0;
