@@ -56,41 +56,45 @@ class DirectMemoryOperand : public Operand {
 // Only r0 - r15
 class IndirectMemoryOperand : public Operand {
  public:
-  enum class Mode {
+  enum class AddressMode {
     kPlain,          // [r1]
     kPostIncrement,  // [r1+]
     kPreDecrement,   // [-r1]
     kDisplacement,   // [r1 + #0x1234]
   };
 
-  static std::unique_ptr<IndirectMemoryOperand> Plain(RegisterId id) {
-    return std::unique_ptr<IndirectMemoryOperand>(new IndirectMemoryOperand(id, 0, Mode::kPlain));
+  static std::unique_ptr<IndirectMemoryOperand> CreatePlain(RegisterId id) {
+    return std::unique_ptr<IndirectMemoryOperand>(
+        new IndirectMemoryOperand(id, 0, AddressMode::kPlain));
   }
 
-  static std::unique_ptr<IndirectMemoryOperand> PostIncrement(RegisterId id) {
+  static std::unique_ptr<IndirectMemoryOperand> CreatePostIncrement(RegisterId id) {
     return std::unique_ptr<IndirectMemoryOperand>(
-        new IndirectMemoryOperand(id, 0, Mode::kPostIncrement));
+        new IndirectMemoryOperand(id, 0, AddressMode::kPostIncrement));
   }
 
-  static std::unique_ptr<IndirectMemoryOperand> PreDecrement(RegisterId id) {
+  static std::unique_ptr<IndirectMemoryOperand> CreatePreDecrement(RegisterId id) {
     return std::unique_ptr<IndirectMemoryOperand>(
-        new IndirectMemoryOperand(id, 0, Mode::kPreDecrement));
+        new IndirectMemoryOperand(id, 0, AddressMode::kPreDecrement));
   }
 
-  static std::unique_ptr<IndirectMemoryOperand> Displacement(RegisterId id, Word displacement) {
+  static std::unique_ptr<IndirectMemoryOperand> CreateDisplacement(RegisterId id,
+                                                                   Word displacement) {
     return std::unique_ptr<IndirectMemoryOperand>(
-        new IndirectMemoryOperand(id, displacement, Mode::kDisplacement));
+        new IndirectMemoryOperand(id, displacement, AddressMode::kDisplacement));
   }
 
   std::string ToString() const override;
 
-  bool Validate() const { return id_ >= RegisterId::kR0 && id_ <= RegisterId::kR15; }
+  RegisterId Id() const { return id_; }
+  Word Displacement() const { return displacement_; }
+  AddressMode Mode() const { return mode_; }
 
  private:
-  IndirectMemoryOperand(RegisterId id, Word displacement, Mode mode)
+  IndirectMemoryOperand(RegisterId id, Word displacement, AddressMode mode)
       : id_(id), displacement_(displacement), mode_(mode) {}
   RegisterId id_;
-  Word displacement_ = 0;
-  Mode mode_;
+  Word displacement_;
+  AddressMode mode_;
 };
 }  // namespace c166
