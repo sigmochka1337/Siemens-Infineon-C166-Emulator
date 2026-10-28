@@ -8,7 +8,7 @@ class PhysicalAddressOutOfRange : public std::exception {
  public:
   explicit PhysicalAddressOutOfRange(PhysicalAddress address)
       : address_(address),
-        msg_(std::format("Адрес `{:#08X}` не доступен. Доступные адреса: 0x000000 - 0xFFFFFF",
+        msg_(std::format("Адрес `0x{:#06X}` не доступен. Доступные адреса: 0x000000 - 0xFFFFFF",
                          address_)) {}
 
   const char* what() const noexcept override { return msg_.c_str(); }
@@ -24,7 +24,7 @@ class LogicalAddressOutOfRange : public std::exception {
  public:
   explicit LogicalAddressOutOfRange(LogicalAddress address)
       : address_(address),
-        msg_(std::format("Адрес `{:#06X}` не доступен. Доступные адреса: 0x0000 - 0xFFFF",
+        msg_(std::format("Адрес `0x{:#04X}` не доступен. Доступные адреса: 0x0000 - 0xFFFF",
                          address_)) {}
 
   const char* what() const noexcept override { return msg_.c_str(); }
@@ -40,7 +40,7 @@ class AddressIsReadOnly : public std::exception {
  public:
   explicit AddressIsReadOnly(LogicalAddress address)
       : address_(address),
-        msg_(std::format("Адрес `{:#06X}` доступен только для чтения", address_)) {}
+        msg_(std::format("Адрес `0x{:#04X}` доступен только для чтения", address_)) {}
 
   const char* what() const noexcept override { return msg_.c_str(); }
 
@@ -56,9 +56,10 @@ class UnreadableInstruction : public std::exception {
   explicit UnreadableInstruction(CodeAddress address, std::array<Byte, 4> bytes)
       : address_(address),
         bytes_(bytes),
-        msg_(std::format("Не удалось определить инструкцию по адресу {:#08X}. Контекст: {:#04X} "
-                         "{:#04X} {:#04X} {:#04X}",
-                         address.ToPhysicalAddress(), bytes[0], bytes[1], bytes[2], bytes[3])) {}
+        msg_(
+            std::format("Не удалось определить инструкцию по адресу 0x{:#06X}. Контекст: 0x{:#02X} "
+                        "0x{:#02X} 0x{:#02X} 0x{:#02X}",
+                        address.ToPhysicalAddress(), bytes[0], bytes[1], bytes[2], bytes[3])) {}
 
   const char* what() const noexcept override { return msg_.c_str(); }
 
@@ -104,7 +105,7 @@ class InvalidBreakpointAddress : public std::exception {
  public:
   explicit InvalidBreakpointAddress(PhysicalAddress address)
       : address_(address),
-        msg_(std::format("Невозможно установить breakpoint по адресу `{:#08X}`", address_)) {}
+        msg_(std::format("Невозможно установить breakpoint по адресу `0x{:#06X}`", address_)) {}
 
   const char* what() const noexcept override { return msg_.c_str(); }
 
@@ -119,7 +120,7 @@ class BreakpointDoesNotExist : public std::exception {
  public:
   explicit BreakpointDoesNotExist(PhysicalAddress address)
       : address_(address),
-        msg_(std::format("Не существует breakpoint по адресу `{:#08X}`", address_)) {}
+        msg_(std::format("Не существует breakpoint по адресу `0x{:#06X}`", address_)) {}
 
   const char* what() const noexcept override { return msg_.c_str(); }
 

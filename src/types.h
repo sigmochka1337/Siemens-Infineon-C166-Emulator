@@ -151,7 +151,7 @@ enum class Mnemonic {
 };
 
 std::string MnemonicToString(Mnemonic mnemonic);
-
+std::string RegisterIdToString(RegisterId id);
 class Operand {
  public:
   virtual ~Operand() = default;
