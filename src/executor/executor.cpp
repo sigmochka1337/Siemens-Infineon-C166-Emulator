@@ -29,5 +29,9 @@ void Executor::Execute(const Instruction& instruction) {
     default:
       throw UnknownInstruction(instruction);
   }
+
+  auto pc = machine_.GetPC();
+  pc.offset = (pc.offset + instruction.size) & 0xFFFF;
+  machine_.SetPC(pc);
 }
 }  // namespace c166
