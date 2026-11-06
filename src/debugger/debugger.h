@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include <set>
+#include <string>
 
 #include "interfaces/debugger.h"
 #include "interfaces/executor.h"
@@ -14,6 +15,7 @@ class Debugger : public IDebugger {
   void Run() override;
   void AddBreakpoint(PhysicalAddress address) override;
   void RemoveBreakpoint(PhysicalAddress address) override;
+  std::string NextInstructionToString() const override;
 
  private:
   IMachine& machine_;

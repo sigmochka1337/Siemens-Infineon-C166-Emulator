@@ -1,5 +1,7 @@
 #include "debugger/debugger.h"
 
+#include <format>
+
 #include "exceptions.h"
 
 namespace c166 {
@@ -18,8 +20,8 @@ void Debugger::RemoveBreakpoint(PhysicalAddress address) {
 }
 void Debugger::Step() {
   CodeAddress pc = machine_.GetPC();
-  Instruction Instruction = fetcher_.Fetch(pc);
-  executor_.Execute(Instruction);
+  Instruction instruction = fetcher_.Fetch(pc);
+  executor_.Execute(instruction);
 }
 void Debugger::Run() {
   for (size_t executed = 0; executed < run_limit_; ++executed) {
@@ -29,5 +31,10 @@ void Debugger::Run() {
     }
     Step();
   }
+}
+std::string Debugger::NextInstructionToString() const {
+  CodeAddress pc = machine_.GetPC();
+  Instruction instruction = fetcher_.Fetch(pc);
+  return std::format("0x{:06X}: {}", pc.ToPhysicalAddress(), instruction.ToString());
 }
 }  // namespace c166

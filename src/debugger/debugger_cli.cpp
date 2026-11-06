@@ -48,10 +48,13 @@ bool DebuggerCli::Handle(const std::string& line) {
       } else {
         out_ << "usage: delete <hex address>\n";
       }
-    } else if (command == "quiet" || command == "q") {
+    } else if (command == "quit" || command == "q") {
       return false;
+    } else if (command == "show" || command == "i") {
+      out_ << debugger_.NextInstructionToString() << "\n";
     } else {
-      out_ << "commands: step (s), run (r), break (b) <addr>, dedlete (d) <adder>, quiet (q)\n";
+      out_ << "commands: step (s), run (r), break (b) <addr>, delete (d) <addr>, show (i), quit "
+              "(q)\n";
     }
   } catch (const std::exception& e) {
     out_ << "error: " << e.what() << "\n";
