@@ -37,4 +37,21 @@ std::string Debugger::NextInstructionToString() const {
   Instruction instruction = fetcher_.Fetch(pc);
   return std::format("0x{:06X}: {}", pc.ToPhysicalAddress(), instruction.ToString());
 }
+Snapshot Debugger::Trace() const {
+  Snapshot snapshot;
+  snapshot.psw = machine_.ReadRegister(RegisterId::kPSW);
+  const RegisterId registr[] = {
+      RegisterId::kR0,   RegisterId::kR1,    RegisterId::kR2,    RegisterId::kR3,
+      RegisterId::kR4,   RegisterId::kR5,    RegisterId::kR6,    RegisterId::kR7,
+      RegisterId::kR8,   RegisterId::kR9,    RegisterId::kR10,   RegisterId::kR11,
+      RegisterId::kR12,  RegisterId::kR13,   RegisterId::kR14,   RegisterId::kR15,
+      RegisterId::kSP,   RegisterId::kCP,    RegisterId::kDPP0,  RegisterId::kDPP1,
+      RegisterId::kDPP2, RegisterId::kDPP3,  RegisterId::kMDL,   RegisterId::kMDH,
+      RegisterId::kMDC,  RegisterId::kSTKOV, RegisterId::kSTKUN,
+  };
+  for (RegisterId id : registr) {
+    snapshot.registers.push_back({id, machine_.ReadRegister(id)});
+  }
+  return snapshot;
+}
 }  // namespace c166

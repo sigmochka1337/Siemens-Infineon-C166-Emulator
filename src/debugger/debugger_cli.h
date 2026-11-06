@@ -14,5 +14,6 @@ class DebuggerCli {
   IDebugger& debugger_;
   std::istream& in_;
   std::ostream& out_;
+  void PrintState() const;
 };
 }  // namespace c166

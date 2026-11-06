@@ -16,6 +16,7 @@ class Debugger : public IDebugger {
   void AddBreakpoint(PhysicalAddress address) override;
   void RemoveBreakpoint(PhysicalAddress address) override;
   std::string NextInstructionToString() const override;
+  Snapshot Trace() const override;
 
  private:
   IMachine& machine_;
