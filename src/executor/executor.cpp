@@ -9,7 +9,8 @@ namespace {
 
 class Helper {
  public:
-  Helper(const Instruction& instruction) : instruction_(instruction) {}
+  Helper(const Instruction& instruction, IMachine& machine)
+      : instruction_(instruction), machine_(machine) {}
 
   void ValidateOperandsSize(size_t size) {
     if (instruction_.operands.size() != size) {
@@ -19,13 +20,22 @@ class Helper {
 
   Operand* operator[](size_t index) { return instruction_.operands[index].get(); }
 
+  void AdvancePC() {
+    CodeAddress pc = machine_.GetPC();
+    pc.offset = static_cast<Word>(pc.offset + instruction_.size);
+    machine_.SetPC(pc);
+  }
+
  private:
   const Instruction& instruction_;
+  IMachine& machine_;
 };
 }  // namespace
 
 void Executor::Execute(const Instruction& instruction) {
-  Helper helper(instruction);
+  Helper helper(instruction, machine_);
+  helper.AdvancePC();
+
   switch (instruction.mnemonic) {
     case Mnemonic::kMov: {
       helper.ValidateOperandsSize(2);
@@ -97,12 +107,85 @@ void Executor::Execute(const Instruction& instruction) {
       throw InvalidInstruction(instruction);
     }
 
+    case Mnemonic::kPush: {
+      helper.ValidateOperandsSize(1);
+
+      if (stack_.Push(helper[0])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kPop: {
+      helper.ValidateOperandsSize(1);
+
+      if (stack_.Pop(helper[0])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kCallA: {
+      helper.ValidateOperandsSize(2);
+
+      if (stack_.Calla(helper[0], helper[1])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kCallI: {
+      helper.ValidateOperandsSize(2);
+
+      if (stack_.Calli(helper[0], helper[1])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kCallR: {
+      helper.ValidateOperandsSize(1);
+
+      if (stack_.Callr(helper[0])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kCallS: {
+      helper.ValidateOperandsSize(2);
+
+      if (stack_.Calls(helper[0], helper[1])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kPCall: {
+      helper.ValidateOperandsSize(2);
+
+      if (stack_.Pcall(helper[0], helper[1])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kRet: {
+      helper.ValidateOperandsSize(0);
+
+      if (stack_.Ret()) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kRetS: {
+      helper.ValidateOperandsSize(0);
+
+      if (stack_.Rets()) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kRetP: {
+      helper.ValidateOperandsSize(1);
+
+      if (stack_.Retp(helper[0])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kReti: {
+      helper.ValidateOperandsSize(0);
+
+      if (stack_.Reti()) break;
+      throw InvalidInstruction(instruction);
+    }
+
     default:
       throw UnknownInstruction(instruction);
   }
-
-  auto pc = machine_.GetPC();
-  pc.offset = (pc.offset + instruction.size) & 0xFFFF;
-  machine_.SetPC(pc);
 }
 }  // namespace c166
