@@ -20,6 +20,13 @@ class Helper {
 
   Operand* operator[](size_t index) { return instruction_.operands[index].get(); }
 
+  ConditionCode Condition() const {
+    if (!instruction_.condition.has_value()) {
+      throw InvalidInstruction(instruction_);
+    }
+    return *instruction_.condition;
+  }
+
   void AdvancePC() {
     CodeAddress pc = machine_.GetPC();
     pc.offset = static_cast<Word>(pc.offset + instruction_.size);
@@ -122,16 +129,16 @@ void Executor::Execute(const Instruction& instruction) {
     }
 
     case Mnemonic::kCallA: {
-      helper.ValidateOperandsSize(2);
+      helper.ValidateOperandsSize(1);
 
-      if (stack_.Calla(helper[0], helper[1])) break;
+      if (stack_.Calla(helper.Condition(), helper[0])) break;
       throw InvalidInstruction(instruction);
     }
 
     case Mnemonic::kCallI: {
-      helper.ValidateOperandsSize(2);
+      helper.ValidateOperandsSize(1);
 
-      if (stack_.Calli(helper[0], helper[1])) break;
+      if (stack_.Calli(helper.Condition(), helper[0])) break;
       throw InvalidInstruction(instruction);
     }
 
@@ -143,9 +150,9 @@ void Executor::Execute(const Instruction& instruction) {
     }
 
     case Mnemonic::kCallS: {
-      helper.ValidateOperandsSize(2);
+      helper.ValidateOperandsSize(1);
 
-      if (stack_.Calls(helper[0], helper[1])) break;
+      if (stack_.Calls(helper[0])) break;
       throw InvalidInstruction(instruction);
     }
 
@@ -157,30 +164,30 @@ void Executor::Execute(const Instruction& instruction) {
     }
 
     case Mnemonic::kJmpA: {
-      helper.ValidateOperandsSize(2);
+      helper.ValidateOperandsSize(1);
 
-      if (move_.Jmpa(helper[0], helper[1])) break;
+      if (move_.Jmpa(helper.Condition(), helper[0])) break;
       throw InvalidInstruction(instruction);
     }
 
     case Mnemonic::kJmpI: {
-      helper.ValidateOperandsSize(2);
+      helper.ValidateOperandsSize(1);
 
-      if (move_.Jmpi(helper[0], helper[1])) break;
+      if (move_.Jmpi(helper.Condition(), helper[0])) break;
       throw InvalidInstruction(instruction);
     }
 
     case Mnemonic::kJmpR: {
-      helper.ValidateOperandsSize(2);
+      helper.ValidateOperandsSize(1);
 
-      if (move_.Jmpr(helper[0], helper[1])) break;
+      if (move_.Jmpr(helper.Condition(), helper[0])) break;
       throw InvalidInstruction(instruction);
     }
 
     case Mnemonic::kJmpS: {
-      helper.ValidateOperandsSize(2);
+      helper.ValidateOperandsSize(1);
 
-      if (move_.Jmps(helper[0], helper[1])) break;
+      if (move_.Jmps(helper[0])) break;
       throw InvalidInstruction(instruction);
     }
 
