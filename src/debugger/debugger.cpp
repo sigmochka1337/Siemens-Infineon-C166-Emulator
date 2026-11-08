@@ -1,6 +1,7 @@
 #include "debugger/debugger.h"
 
 #include <format>
+#include <stdexcept>
 
 #include "exceptions.h"
 
@@ -53,5 +54,29 @@ Snapshot Debugger::Trace() const {
     snapshot.registers.push_back({id, machine_.ReadRegister(id)});
   }
   return snapshot;
+}
+Byte Debugger::PhysicalRead8(PhysicalAddress) const {
+  throw std::runtime_error("Debugger::PhysicalRead8 is not implemented");
+}
+Word Debugger::PhysicalRead16(PhysicalAddress) const {
+  throw std::runtime_error("Debugger::PhysicalRead16 is not implemented");
+}
+void Debugger::PhysicalWrite8(PhysicalAddress, Byte) {
+  throw std::runtime_error("Debugger::PhysicalWrite8 is not implemented");
+}
+void Debugger::PhysicalWrite16(PhysicalAddress, Word) {
+  throw std::runtime_error("Debugger::PhysicalWrite16 is not implemented");
+}
+Byte Debugger::LogicalRead8(LogicalAddress) const {
+  throw std::runtime_error("Debugger::LogicalRead8 is not implemented");
+}
+Word Debugger::LogicalRead16(LogicalAddress) const {
+  throw std::runtime_error("Debugger::LogicalRead16 is not implemented");
+}
+void Debugger::LogicalWrite8(LogicalAddress, Byte) {
+  throw std::runtime_error("Debugger::LogicalWrite8 is not implemented");
+}
+void Debugger::LogicalWrite16(LogicalAddress, Word) {
+  throw std::runtime_error("Debugger::LogicalWrite16 is not implemented");
 }
 }  // namespace c166

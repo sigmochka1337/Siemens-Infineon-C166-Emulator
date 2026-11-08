@@ -11,12 +11,24 @@ namespace c166 {
 class Debugger : public IDebugger {
  public:
   Debugger(IMachine& machine, IFetcher& fetcher, IExecutor& executor);
+
   void Step() override;
   void Run() override;
   void AddBreakpoint(PhysicalAddress address) override;
   void RemoveBreakpoint(PhysicalAddress address) override;
-  std::string NextInstructionToString() const override;
+
   Snapshot Trace() const override;
+  Byte PhysicalRead8(PhysicalAddress address) const override;
+  Word PhysicalRead16(PhysicalAddress address) const override;
+  void PhysicalWrite8(PhysicalAddress address, Byte value) override;
+  void PhysicalWrite16(PhysicalAddress address, Word value) override;
+
+  Byte LogicalRead8(LogicalAddress address) const override;
+  Word LogicalRead16(LogicalAddress address) const override;
+  void LogicalWrite8(LogicalAddress address, Byte value) override;
+  void LogicalWrite16(LogicalAddress address, Word value) override;
+
+  std::string NextInstructionToString() const override;
 
  private:
   IMachine& machine_;

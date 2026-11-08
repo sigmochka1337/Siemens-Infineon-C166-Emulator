@@ -174,7 +174,6 @@ enum class ConditionCode : std::uint8_t {
   kULE = 15,
 };
 
-std::string ConditionCodeToString(ConditionCode condition);
 std::string MnemonicToString(Mnemonic mnemonic);
 std::string RegisterIdToString(RegisterId id);
 std::string ConditionCodeToString(ConditionCode condition);
