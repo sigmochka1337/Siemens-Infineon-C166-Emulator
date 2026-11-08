@@ -128,9 +128,51 @@ std::string MnemonicToString(Mnemonic mnemonic) {
       return "extr";
     case Mnemonic::kAtomic:
       return "atomic";
+    case Mnemonic::kMovBS:
+      return "movbs";
+    case Mnemonic::kMovBZ:
+      return "movbz";
     default:
       return "unknown";
   }
+}
+
+std::string ConditionCodeToString(ConditionCode condition) {
+  switch (condition) {
+    case ConditionCode::kUC:
+      return "cc_UC";
+    case ConditionCode::kNET:
+      return "cc_NET";
+    case ConditionCode::kZ:
+      return "cc_Z";
+    case ConditionCode::kNZ:
+      return "cc_NZ";
+    case ConditionCode::kV:
+      return "cc_V";
+    case ConditionCode::kNV:
+      return "cc_NV";
+    case ConditionCode::kN:
+      return "cc_N";
+    case ConditionCode::kNN:
+      return "cc_NN";
+    case ConditionCode::kC:
+      return "cc_C";
+    case ConditionCode::kNC:
+      return "cc_NC";
+    case ConditionCode::kSGT:
+      return "cc_SGT";
+    case ConditionCode::kSLE:
+      return "cc_SLE";
+    case ConditionCode::kSLT:
+      return "cc_SLT";
+    case ConditionCode::kSGE:
+      return "cc_SGE";
+    case ConditionCode::kUGT:
+      return "cc_UGT";
+    case ConditionCode::kULE:
+      return "cc_ULE";
+  }
+  return "cc_UC";
 }
 
 std::string RegisterIdToString(RegisterId id) {
@@ -230,8 +272,17 @@ std::string RegisterIdToString(RegisterId id) {
 
 std::string Instruction::ToString() const {
   std::string res = MnemonicToString(mnemonic);
+  bool first = true;
+
+  if (condition.has_value()) {
+    res += " " + ConditionCodeToString(*condition);
+    first = false;
+  }
+
   for (const auto& operand : operands) {
-    res += " " + operand->ToString();
+    res += first ? " " : ", ";
+    res += operand->ToString();
+    first = false;
   }
   return res;
 }

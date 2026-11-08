@@ -148,10 +148,34 @@ enum class Mnemonic {
   kExtpr,
   kExtr,
   kAtomic,
+  kMovBS,
+  kMovBZ,
+};
+
+// 4-битное поле условия C166. Имена — канонические; ассемблерные алиасы
+// (cc_EQ, cc_NE, cc_UGE, cc_ULT) при декодировании сводятся к ним.
+enum class ConditionCode : std::uint8_t {
+  kUC = 0,
+  kNET = 1,
+  kZ = 2,
+  kNZ = 3,
+  kV = 4,
+  kNV = 5,
+  kN = 6,
+  kNN = 7,
+  kC = 8,
+  kNC = 9,
+  kSGT = 10,
+  kSLE = 11,
+  kSLT = 12,
+  kSGE = 13,
+  kUGT = 14,
+  kULE = 15,
 };
 
 std::string MnemonicToString(Mnemonic mnemonic);
 std::string RegisterIdToString(RegisterId id);
+std::string ConditionCodeToString(ConditionCode condition);
 class Operand {
  public:
   virtual ~Operand() = default;
@@ -159,9 +183,10 @@ class Operand {
 };
 
 struct Instruction {
-  Mnemonic mnemonic;
+  Mnemonic mnemonic = Mnemonic::kUnknown;
+  std::optional<ConditionCode> condition;
   std::vector<std::unique_ptr<Operand>> operands;
-  Byte size;
+  Byte size = 0;
 
   std::string ToString() const;
 };
