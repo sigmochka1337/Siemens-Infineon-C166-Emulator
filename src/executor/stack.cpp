@@ -5,7 +5,7 @@
 namespace c166 {
 namespace {
 
-bool IsConditionMet(Word condition, Word psw_value) {
+bool IsConditionMet(ConditionCode condition, Word psw_value) {
   const bool e = (psw_value & psw::kE) != 0;
   const bool z = (psw_value & psw::kZ) != 0;
   const bool v = (psw_value & psw::kV) != 0;
@@ -13,41 +13,40 @@ bool IsConditionMet(Word condition, Word psw_value) {
   const bool n = (psw_value & psw::kN) != 0;
 
   switch (condition) {
-    case 0x0:  // cc_UC
+    case ConditionCode::kUC:
       return true;
-    case 0x1:  // cc_NET
+    case ConditionCode::kNET:
       return !z && !e;
-    case 0x2:  // cc_Z / cc_EQ
+    case ConditionCode::kZ:
       return z;
-    case 0x3:  // cc_NZ / cc_NE
+    case ConditionCode::kNZ:
       return !z;
-    case 0x4:  // cc_V
+    case ConditionCode::kV:
       return v;
-    case 0x5:  // cc_NV
+    case ConditionCode::kNV:
       return !v;
-    case 0x6:  // cc_N
+    case ConditionCode::kN:
       return n;
-    case 0x7:  // cc_NN
+    case ConditionCode::kNN:
       return !n;
-    case 0x8:  // cc_C / cc_ULT
+    case ConditionCode::kC:
       return c;
-    case 0x9:  // cc_NC / cc_UGE
+    case ConditionCode::kNC:
       return !c;
-    case 0xA:  // cc_SGT
+    case ConditionCode::kSGT:
       return !z && (n == v);
-    case 0xB:  // cc_SLE
+    case ConditionCode::kSLE:
       return z || (n != v);
-    case 0xC:  // cc_SLT
+    case ConditionCode::kSLT:
       return n != v;
-    case 0xD:  // cc_SGE
+    case ConditionCode::kSGE:
       return n == v;
-    case 0xE:  // cc_UGT
+    case ConditionCode::kUGT:
       return !z && !c;
-    case 0xF:  // cc_ULE
+    case ConditionCode::kULE:
       return z || c;
-    default:
-      return false;
   }
+  return false;
 }
 
 }  // namespace
@@ -85,18 +84,17 @@ bool Stack::Pop(const RegisterOperand* dst) {
 // ---------------------
 // ------- CALLA -------
 // ---------------------
-bool Stack::Calla(const Operand* condition, const Operand* address) {
-  return Calla(dynamic_cast<const ImmediateOperand*>(condition),
-               dynamic_cast<const DirectMemoryOperand*>(address));
+bool Stack::Calla(ConditionCode condition, const Operand* address) {
+  return Calla(condition, dynamic_cast<const CodeAddressOperand*>(address));
 }
 
-bool Stack::Calla(const ImmediateOperand* condition, const DirectMemoryOperand* address) {
-  if (!condition || !address || condition->Value() > 0xF) return false;
-  if (!IsConditionMet(condition->Value(), machine_.ReadRegister(RegisterId::kPSW))) return true;
+bool Stack::Calla(ConditionCode condition, const CodeAddressOperand* address) {
+  if (!address) return false;
+  if (!IsConditionMet(condition, machine_.ReadRegister(RegisterId::kPSW))) return true;
 
   CodeAddress pc = machine_.GetPC();
   PushWord(pc.offset);
-  pc.offset = address->Address();
+  pc.offset = address->Offset();
   machine_.SetPC(pc);
   return true;
 }
@@ -104,16 +102,15 @@ bool Stack::Calla(const ImmediateOperand* condition, const DirectMemoryOperand* 
 // ---------------------
 // ------- CALLI -------
 // ---------------------
-bool Stack::Calli(const Operand* condition, const Operand* address) {
-  return Calli(dynamic_cast<const ImmediateOperand*>(condition),
-               dynamic_cast<const IndirectMemoryOperand*>(address));
+bool Stack::Calli(ConditionCode condition, const Operand* address) {
+  return Calli(condition, dynamic_cast<const IndirectMemoryOperand*>(address));
 }
 
-bool Stack::Calli(const ImmediateOperand* condition, const IndirectMemoryOperand* address) {
-  if (!condition || !address || condition->Value() > 0xF) return false;
+bool Stack::Calli(ConditionCode condition, const IndirectMemoryOperand* address) {
+  if (!address) return false;
   if (!IsWordGpr(address->Id())) return false;
   if (address->Mode() != IndirectMemoryOperand::AddressMode::kPlain) return false;
-  if (!IsConditionMet(condition->Value(), machine_.ReadRegister(RegisterId::kPSW))) return true;
+  if (!IsConditionMet(condition, machine_.ReadRegister(RegisterId::kPSW))) return true;
 
   Word target = machine_.ReadRegister(address->Id());
   CodeAddress pc = machine_.GetPC();
@@ -127,16 +124,15 @@ bool Stack::Calli(const ImmediateOperand* condition, const IndirectMemoryOperand
 // ------- CALLR -------
 // ---------------------
 bool Stack::Callr(const Operand* displacement) {
-  return Callr(dynamic_cast<const ImmediateOperand*>(displacement));
+  return Callr(dynamic_cast<const RelativeOperand*>(displacement));
 }
 
-bool Stack::Callr(const ImmediateOperand* displacement) {
-  if (!displacement || displacement->Value() > 0xFF) return false;
+bool Stack::Callr(const RelativeOperand* displacement) {
+  if (!displacement) return false;
 
   CodeAddress pc = machine_.GetPC();
   PushWord(pc.offset);
-  const auto relative_words = static_cast<std::int8_t>(displacement->Value());
-  pc.offset = static_cast<Word>(pc.offset + static_cast<std::int16_t>(relative_words) * 2);
+  pc.offset = static_cast<Word>(pc.offset + displacement->Words() * 2);
   machine_.SetPC(pc);
   return true;
 }
@@ -144,19 +140,18 @@ bool Stack::Callr(const ImmediateOperand* displacement) {
 // ---------------------
 // ------- CALLS -------
 // ---------------------
-bool Stack::Calls(const Operand* segment, const Operand* address) {
-  return Calls(dynamic_cast<const ImmediateOperand*>(segment),
-               dynamic_cast<const DirectMemoryOperand*>(address));
+bool Stack::Calls(const Operand* address) {
+  return Calls(dynamic_cast<const SegmentedAddressOperand*>(address));
 }
 
-bool Stack::Calls(const ImmediateOperand* segment, const DirectMemoryOperand* address) {
-  if (!segment || !address || segment->Value() > 0xFF) return false;
+bool Stack::Calls(const SegmentedAddressOperand* address) {
+  if (!address) return false;
 
   CodeAddress pc = machine_.GetPC();
   PushWord(pc.segment);
   PushWord(pc.offset);
-  pc.segment = static_cast<Byte>(segment->Value());
-  pc.offset = address->Address();
+  pc.segment = address->Segment();
+  pc.offset = address->Offset();
   machine_.SetPC(pc);
   return true;
 }
@@ -166,10 +161,10 @@ bool Stack::Calls(const ImmediateOperand* segment, const DirectMemoryOperand* ad
 // ---------------------
 bool Stack::Pcall(const Operand* src, const Operand* address) {
   return Pcall(dynamic_cast<const RegisterOperand*>(src),
-               dynamic_cast<const DirectMemoryOperand*>(address));
+               dynamic_cast<const CodeAddressOperand*>(address));
 }
 
-bool Stack::Pcall(const RegisterOperand* src, const DirectMemoryOperand* address) {
+bool Stack::Pcall(const RegisterOperand* src, const CodeAddressOperand* address) {
   if (!src || !address || !IsWordRegister(src->Id())) return false;
 
   Word value = machine_.ReadRegister(src->Id());
@@ -177,7 +172,7 @@ bool Stack::Pcall(const RegisterOperand* src, const DirectMemoryOperand* address
   PushWord(value);
   PushWord(pc.offset);
   SetDataFlags(value);
-  pc.offset = address->Address();
+  pc.offset = address->Offset();
   machine_.SetPC(pc);
   return true;
 }
