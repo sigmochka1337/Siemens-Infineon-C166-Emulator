@@ -156,6 +156,34 @@ void Executor::Execute(const Instruction& instruction) {
       throw InvalidInstruction(instruction);
     }
 
+    case Mnemonic::kJmpA: {
+      helper.ValidateOperandsSize(2);
+
+      if (move_.Jmpa(helper[0], helper[1])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kJmpI: {
+      helper.ValidateOperandsSize(2);
+
+      if (move_.Jmpi(helper[0], helper[1])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kJmpR: {
+      helper.ValidateOperandsSize(2);
+
+      if (move_.Jmpr(helper[0], helper[1])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kJmpS: {
+      helper.ValidateOperandsSize(2);
+
+      if (move_.Jmps(helper[0], helper[1])) break;
+      throw InvalidInstruction(instruction);
+    }
+
     case Mnemonic::kRet: {
       helper.ValidateOperandsSize(0);
 
