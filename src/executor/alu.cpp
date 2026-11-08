@@ -47,8 +47,8 @@ bool ALU::Add(const RegisterOperand* dst, const RegisterOperand* src) {
 bool ALU::Add(const RegisterOperand* dst, const IndirectMemoryOperand* src) {
   using Mode = IndirectMemoryOperand::AddressMode;
   if (!dst || !src) return false;
-  if (!IsWordGpr(dst->Id()) && !IsWordGpr(src->Id())) return false;
-  if (src->Mode() != Mode::kPlain || src->Mode() != Mode::kPostIncrement) return false;
+  if (!IsWordGpr(dst->Id()) || !IsWordGpr(src->Id())) return false;
+  if (src->Mode() != Mode::kPlain && src->Mode() != Mode::kPostIncrement) return false;
 
   Word left = machine_.ReadRegister(dst->Id());
   const auto r_value = machine_.ReadRegister(src->Id());
