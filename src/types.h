@@ -161,6 +161,7 @@ class Operand {
 struct Instruction {
   Mnemonic mnemonic;
   std::vector<std::unique_ptr<Operand>> operands;
+  Byte size;
 
   std::string ToString() const;
 };
