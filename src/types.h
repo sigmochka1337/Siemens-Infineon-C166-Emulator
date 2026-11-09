@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <format>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -71,6 +72,8 @@ enum class RegisterId {
   kMDC,
   kSTKOV,
   kSTKUN,
+  kSYSCON,
+  kTFR,
 };
 namespace psw {
 inline constexpr Word kN = 1u << 0;
@@ -81,7 +84,19 @@ inline constexpr Word kE = 1u << 4;
 inline constexpr Word kMulip = 1u << 5;
 inline constexpr Word kUsr0 = 1u << 6;
 inline constexpr Word kConditionMask = kN | kC | kV | kZ | kE;
+inline constexpr Word kPriorityMask = 0xF000;
 }  // namespace psw
+
+namespace syscon {
+inline constexpr Word kSegmentationDisabled = 1u << 11;
+inline constexpr Word kStackSizeMask = 0xE000;
+inline constexpr unsigned kStackSizeShift = 13;
+}  // namespace syscon
+
+namespace tfr {
+inline constexpr Word kStackOverflow = 1u << 14;
+inline constexpr Word kStackUnderflow = 1u << 13;
+}  // namespace tfr
 
 enum class Mnemonic {
   kUnknown,
@@ -148,8 +163,32 @@ enum class Mnemonic {
   kExtpr,
   kExtr,
   kAtomic,
+  kMovBS,
+  kMovBZ,
 };
 
+// 4-битное поле условия C166. Имена — канонические; ассемблерные алиасы
+// (cc_EQ, cc_NE, cc_UGE, cc_ULT) при декодировании сводятся к ним.
+enum class ConditionCode : std::uint8_t {
+  kUC = 0,
+  kNET = 1,
+  kZ = 2,
+  kNZ = 3,
+  kV = 4,
+  kNV = 5,
+  kN = 6,
+  kNN = 7,
+  kC = 8,
+  kNC = 9,
+  kSGT = 10,
+  kSLE = 11,
+  kSLT = 12,
+  kSGE = 13,
+  kUGT = 14,
+  kULE = 15,
+};
+
+std::string ConditionCodeToString(ConditionCode condition);
 std::string MnemonicToString(Mnemonic mnemonic);
 std::string RegisterIdToString(RegisterId id);
 class Operand {
@@ -159,9 +198,10 @@ class Operand {
 };
 
 struct Instruction {
-  Mnemonic mnemonic;
+  Mnemonic mnemonic = Mnemonic::kUnknown;
+  std::optional<ConditionCode> condition;
   std::vector<std::unique_ptr<Operand>> operands;
-  Byte size;
+  Byte size = 0;
 
   std::string ToString() const;
 };

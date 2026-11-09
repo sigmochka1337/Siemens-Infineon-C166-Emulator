@@ -65,6 +65,8 @@ class UnreadableInstruction : public std::exception {
 
   CodeAddress GetAddress() const { return address_; }
 
+  std::array<Byte, 4> Bytes() const { return bytes_; };
+
  private:
   CodeAddress address_;
   std::array<Byte, 4> bytes_;
