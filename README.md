@@ -9,6 +9,12 @@
 инструкций C166. Executor, Debugger и полноценная Memory пока представлены
 интерфейсами.
 
+> **Состояние ветки `fetcher`.** После коммита `7122733` из ветки удалены
+> `src/flat_machine.*`, `src/loader.*` и CLI (`src/main.cpp` пустой).
+> Разделы про CLI/загрузчик ниже описывают локальную демо-конфигурацию,
+> в которой проверялся Fetcher; ядро `src/fetcher.*` от них не зависит.
+> Чтобы собирать `tests/fetcher_test.cpp`, эти файлы нужно вернуть.
+
 ## Состояние
 
 | Блок | Статус |
@@ -101,7 +107,9 @@ docs/fetcher.md             описание блока Fetcher
 - `docs/c166-ism-v2.0-2001-03.pdf` — C166 Instruction Set Manual V2.0;
 - `docs/c166-subs-um-v1-6-b.pdf` — C166S V1 Subsystem User Manual;
 - `docs/tz.typ` / `docs/tz.pdf` — техническое задание;
-- `docs/fetcher.md` — контракт Fetcher, кодировки, ограничения.
+- `docs/fetcher.md` — контракт Fetcher, кодировки, ограничения;
+- `docs/fetcher_code_and_architecture.md` — подробный разбор кода и
+  архитектуры Fetcher для защиты проекта.
 
 ## Ограничения
 
