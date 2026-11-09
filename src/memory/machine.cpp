@@ -1,6 +1,8 @@
 #include "memory/machine.h"
 
+#include <fstream>
 #include <stdexcept>
+#include <vector>
 
 namespace c166 {
 Machine::Machine(IRawMemory& memory) : memory_(memory) { Reset(); }
@@ -98,5 +100,27 @@ void Machine::LoadBinary(PhysicalAddress address, std::span<const Byte> bytes) {
   for (Byte byte : bytes) {
     Write8(address++, byte);
   }
+}
+void Machine::LoadBinaryFile(PhysicalAddress address, const std::filesystem::path& path) {
+  std::ifstream file(path, std::ios::binary | std::ios::ate);
+  if (!file) {
+    throw std::runtime_error("could not open binary file: " + path.string());
+  }
+
+  const std::streamoff size = file.tellg();
+  if (size < 0) {
+    throw std::runtime_error("could not determine binary file size: " + path.string());
+  }
+  if (address > kMaxPhysicalAddress || size > kMaxPhysicalAddress - address + 1) {
+    throw std::out_of_range("binary file does not fit in physical memory: " + path.string());
+  }
+
+  std::vector<Byte> bytes(static_cast<std::size_t>(size));
+  file.seekg(0);
+  if (!file || (!bytes.empty() && !file.read(reinterpret_cast<char*>(bytes.data()),
+                                             static_cast<std::streamsize>(bytes.size())))) {
+    throw std::runtime_error("could not read binary file: " + path.string());
+  }
+  LoadBinary(address, bytes);
 }
 }  // namespace c166

@@ -1,4 +1,5 @@
 #pragma once
+#include <filesystem>
 #include <span>
 
 #include "interfaces/memory.h"
@@ -19,6 +20,7 @@ class Machine : public IMachine {
   void Reset() override;
   PhysicalAddress Resolve(LogicalAddress address) override;
   void LoadBinary(PhysicalAddress address, std::span<const Byte> bytes);
+  void LoadBinaryFile(PhysicalAddress address, const std::filesystem::path& path);
 
  private:
   PhysicalAddress RegisterAddress(RegisterId id) const;
