@@ -45,6 +45,10 @@ PhysicalAddress Machine::SfrAddress(RegisterId id) {
       return 0xFF0E;
     case RegisterId::kPSW:
       return 0xFF10;
+    case RegisterId::kSYSCON:
+      return 0xFF12;
+    case RegisterId::kTFR:
+      return 0xFFAC;
     default:
       throw std::invalid_argument("register is not an SFR");
   }
@@ -92,6 +96,8 @@ void Machine::Reset() {
   WriteRegister(RegisterId::kSTKUN, 0xFC00);
   WriteRegister(RegisterId::kSTKOV, 0xFA00);
   WriteRegister(RegisterId::kPSW, 0);
+  WriteRegister(RegisterId::kSYSCON, 0);
+  WriteRegister(RegisterId::kTFR, 0);
   WriteRegister(RegisterId::kMDL, 0);
   WriteRegister(RegisterId::kMDH, 0);
   WriteRegister(RegisterId::kMDC, 0);
