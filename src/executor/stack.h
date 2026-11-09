@@ -22,6 +22,9 @@ class Stack {
   bool Retp(const Operand* dst);
   bool Reti();
 
+  // Class A traps are serviced after the current instruction has completed.
+  void ServiceTraps();
+
  private:
   bool Push(const RegisterOperand* src);
   bool Pop(const RegisterOperand* dst);
@@ -35,6 +38,8 @@ class Stack {
 
   void PushWord(Word value);
   Word PopWord();
+  PhysicalAddress ResolveStackAddress(Word sp) const;
+  void RequestTrap(Word flag);
   void SetDataFlags(Word value);
 
   constexpr void SetFlag(Word& psw, Word flag, bool enabled) noexcept {
@@ -46,9 +51,10 @@ class Stack {
   }
 
   constexpr bool IsWordRegister(RegisterId id) noexcept {
-    return IsWordGpr(id) || (id >= RegisterId::kSP && id <= RegisterId::kSTKUN);
+    return IsWordGpr(id) || (id >= RegisterId::kSP && id <= RegisterId::kTFR);
   }
 
   IMachine& machine_;
+  std::optional<Word> trap_frame_sp_;
 };
 }  // namespace c166

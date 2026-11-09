@@ -30,6 +30,9 @@ class Helper {
   void AdvancePC() {
     CodeAddress pc = machine_.GetPC();
     pc.offset = static_cast<Word>(pc.offset + instruction_.size);
+    if ((machine_.ReadRegister(RegisterId::kSYSCON) & syscon::kSegmentationDisabled) != 0) {
+      pc.segment = 0;
+    }
     machine_.SetPC(pc);
   }
 
@@ -48,6 +51,27 @@ void Executor::Execute(const Instruction& instruction) {
       helper.ValidateOperandsSize(2);
 
       if (move_.Mov(helper[0], helper[1])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kMovB: {
+      helper.ValidateOperandsSize(2);
+
+      if (move_.Movb(helper[0], helper[1])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kMovBS: {
+      helper.ValidateOperandsSize(2);
+
+      if (move_.Movbs(helper[0], helper[1])) break;
+      throw InvalidInstruction(instruction);
+    }
+
+    case Mnemonic::kMovBZ: {
+      helper.ValidateOperandsSize(2);
+
+      if (move_.Movbz(helper[0], helper[1])) break;
       throw InvalidInstruction(instruction);
     }
 
@@ -222,5 +246,6 @@ void Executor::Execute(const Instruction& instruction) {
     default:
       throw UnknownInstruction(instruction);
   }
+  stack_.ServiceTraps();
 }
 }  // namespace c166

@@ -89,7 +89,7 @@ class ALU {
   }
 
   constexpr bool IsWordRegister(RegisterId id) noexcept {
-    return IsWordGpr(id) || (id >= RegisterId::kSP && id <= RegisterId::kSTKUN);
+    return IsWordGpr(id) || (id >= RegisterId::kSP && id <= RegisterId::kTFR);
   }
 
   constexpr bool IsByteGpr(RegisterId id) noexcept {
@@ -97,7 +97,7 @@ class ALU {
   }
 
   constexpr bool IsByteRegister(RegisterId id) noexcept {
-    return IsByteGpr(id) || (id >= RegisterId::kSP && id <= RegisterId::kSTKUN);
+    return IsByteGpr(id) || (id >= RegisterId::kSP && id <= RegisterId::kTFR);
   }
 
   IMachine& machine_;

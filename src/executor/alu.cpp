@@ -28,6 +28,8 @@ bool ALU::Add(const Operand* dst, const Operand* src) {
 
 bool ALU::Add(const RegisterOperand* dst, const ImmediateOperand* src) {
   if (!dst || !src) return false;
+  if (!IsWordRegister(dst->Id())) return false;
+
   Word left = machine_.ReadRegister(dst->Id());
   Word right = src->Value();
   Word res = Add(left, right);
@@ -37,6 +39,8 @@ bool ALU::Add(const RegisterOperand* dst, const ImmediateOperand* src) {
 
 bool ALU::Add(const RegisterOperand* dst, const RegisterOperand* src) {
   if (!dst || !src) return false;
+  if (!IsWordGpr(dst->Id()) || !IsWordGpr(src->Id())) return false;
+
   Word left = machine_.ReadRegister(dst->Id());
   Word right = machine_.ReadRegister(src->Id());
   Word res = Add(left, right);
@@ -47,18 +51,19 @@ bool ALU::Add(const RegisterOperand* dst, const RegisterOperand* src) {
 bool ALU::Add(const RegisterOperand* dst, const IndirectMemoryOperand* src) {
   using Mode = IndirectMemoryOperand::AddressMode;
   if (!dst || !src) return false;
-  if (!IsWordGpr(dst->Id()) || !IsWordGpr(src->Id())) return false;
+  if (!IsWordGpr(dst->Id()) || src->Id() < RegisterId::kR0 || src->Id() > RegisterId::kR3) {
+    return false;
+  }
   if (src->Mode() != Mode::kPlain && src->Mode() != Mode::kPostIncrement) return false;
 
   Word left = machine_.ReadRegister(dst->Id());
   const auto r_value = machine_.ReadRegister(src->Id());
   Word right = machine_.Read16(machine_.Resolve(r_value));
   Word res = Add(left, right);
-  machine_.WriteRegister(dst->Id(), res);
-
   if (src->Mode() == Mode::kPostIncrement) {
     machine_.WriteRegister(src->Id(), static_cast<Word>(r_value + 2));
   }
+  machine_.WriteRegister(dst->Id(), res);
   return true;
 }
 
