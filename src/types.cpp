@@ -265,6 +265,10 @@ std::string RegisterIdToString(RegisterId id) {
       return "STKOV";
     case RegisterId::kSTKUN:
       return "STKUN";
+    case RegisterId::kSYSCON:
+      return "SYSCON";
+    case RegisterId::kTFR:
+      return "TFR";
     default:
       return "unknown";
   }
