@@ -72,6 +72,8 @@ enum class RegisterId {
   kMDC,
   kSTKOV,
   kSTKUN,
+  kSYSCON,
+  kTFR,
 };
 namespace psw {
 inline constexpr Word kN = 1u << 0;
@@ -82,7 +84,19 @@ inline constexpr Word kE = 1u << 4;
 inline constexpr Word kMulip = 1u << 5;
 inline constexpr Word kUsr0 = 1u << 6;
 inline constexpr Word kConditionMask = kN | kC | kV | kZ | kE;
+inline constexpr Word kPriorityMask = 0xF000;
 }  // namespace psw
+
+namespace syscon {
+inline constexpr Word kSegmentationDisabled = 1u << 11;
+inline constexpr Word kStackSizeMask = 0xE000;
+inline constexpr unsigned kStackSizeShift = 13;
+}  // namespace syscon
+
+namespace tfr {
+inline constexpr Word kStackOverflow = 1u << 14;
+inline constexpr Word kStackUnderflow = 1u << 13;
+}  // namespace tfr
 
 enum class Mnemonic {
   kUnknown,
