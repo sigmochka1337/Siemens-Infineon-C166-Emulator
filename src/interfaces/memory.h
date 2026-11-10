@@ -18,6 +18,6 @@ class IMachine {
   virtual void SetPC(CodeAddress pc) = 0;
 
   virtual void Reset() = 0;
-  virtual PhysicalAddress Resolve(LogicalAddress address) = 0;
+  virtual PhysicalAddress Resolve(LogicalAddress address) const = 0;
 };
 }  // namespace c166

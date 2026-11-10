@@ -32,6 +32,28 @@ void Debugger::Run() {
     Step();
   }
 }
+Byte Debugger::PhysicalRead8(PhysicalAddress address) const { return machine_.Read8(address); }
+Word Debugger::PhysicalRead16(PhysicalAddress address) const { return machine_.Read16(address); }
+void Debugger::PhysicalWrite8(PhysicalAddress address, Byte value) {
+  machine_.Write8(address, value);
+}
+void Debugger::PhysicalWrite16(PhysicalAddress address, Word value) {
+  machine_.Write16(address, value);
+}
+
+Byte Debugger::LogicalRead8(LogicalAddress address) const {
+  // Resolve переводит логический адрес в физический с учетом DPP
+  return machine_.Read8(machine_.Resolve(address));
+}
+Word Debugger::LogicalRead16(LogicalAddress address) const {
+  return machine_.Read16(machine_.Resolve(address));
+}
+void Debugger::LogicalWrite8(LogicalAddress address, Byte value) {
+  machine_.Write8(machine_.Resolve(address), value);
+}
+void Debugger::LogicalWrite16(LogicalAddress address, Word value) {
+  machine_.Write16(machine_.Resolve(address), value);
+}
 std::string Debugger::NextInstructionToString() const {
   CodeAddress pc = machine_.GetPC();
   Instruction instruction = fetcher_.Fetch(pc);

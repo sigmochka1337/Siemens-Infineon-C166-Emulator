@@ -55,10 +55,44 @@ bool DebuggerCli::Handle(const std::string& line) {
       out_ << debugger_.NextInstructionToString() << "\n";
     } else if (command == "trace" || command == "t") {
       PrintState();
+    } else if (command == "xp") {
+      PhysicalAddress address = 0;
+      if (input >> std::hex >> address) {
+        Word value = debugger_.PhysicalRead16(address);
+        out_ << std::format("phys[0x{:06X}] = 0x{:04X}\n", address, value);
+      } else {
+        out_ << "usage: xp <hex address>\n";
+      }
+    } else if (command == "xl") {
+      LogicalAddress address = 0;
+      if (input >> std::hex >> address) {
+        Word value = debugger_.LogicalRead16(address);
+        out_ << std::format("log[0x{:04X}] = 0x{:04X}\n", address, value);
+      } else {
+        out_ << "usage: xl <hex address>\n";
+      }
+    } else if (command == "wp") {
+      PhysicalAddress address = 0;
+      Word value = 0;
+      if (input >> std::hex >> address >> value) {
+        debugger_.PhysicalWrite16(address, value);
+        out_ << "written\n";
+      } else {
+        out_ << "usage: wp <hex address> <hex value>\n";
+      }
+    } else if (command == "wl") {
+      LogicalAddress address = 0;
+      Word value = 0;
+      if (input >> std::hex >> address >> value) {
+        debugger_.LogicalWrite16(address, value);
+        out_ << "written\n";
+      } else {
+        out_ << "usage: wl <hex address> <hex value>\n";
+      }
     } else {
       out_ << "commands: step (s), run (r), break (b) <addr>, delete (d) <addr>, show (i), trace "
-              "(t), quit "
-              "(q)\n";
+              "(t),\n"
+              "          xp <addr>, xl <addr>, wp <addr> <val>, wl <addr> <val>, quit (q)\n";
     }
   } catch (const std::exception& e) {
     out_ << "error: " << e.what() << "\n";
