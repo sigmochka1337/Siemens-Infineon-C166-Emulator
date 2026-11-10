@@ -1,9 +1,9 @@
 # Сборка
 
 ```bash
-cmake -E remove_directory '/home/sanya/Desktop/hsse/1 sem/pt/166/build'
-cmake -S '/home/sanya/Desktop/hsse/1 sem/pt/166' -B '/home/sanya/Desktop/hsse/1 sem/pt/166/build' -G Ninja
-cmake --build '/home/sanya/Desktop/hsse/1 sem/pt/166/build'
+cmake -E remove_directory './build'
+cmake -S './' -B './build' -G Ninja
+cmake --build './build'
 ```
 
 # Запуск
