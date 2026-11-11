@@ -190,28 +190,28 @@ void Executor::Execute(const Instruction& instruction) {
     case Mnemonic::kJmpA: {
       helper.ValidateOperandsSize(1);
 
-      if (move_.Jmpa(helper.Condition(), helper[0])) break;
+      if (jump_.Jmpa(helper.Condition(), helper[0])) break;
       throw InvalidInstruction(instruction);
     }
 
     case Mnemonic::kJmpI: {
       helper.ValidateOperandsSize(1);
 
-      if (move_.Jmpi(helper.Condition(), helper[0])) break;
+      if (jump_.Jmpi(helper.Condition(), helper[0])) break;
       throw InvalidInstruction(instruction);
     }
 
     case Mnemonic::kJmpR: {
       helper.ValidateOperandsSize(1);
 
-      if (move_.Jmpr(helper.Condition(), helper[0])) break;
+      if (jump_.Jmpr(helper.Condition(), helper[0])) break;
       throw InvalidInstruction(instruction);
     }
 
     case Mnemonic::kJmpS: {
       helper.ValidateOperandsSize(1);
 
-      if (move_.Jmps(helper[0])) break;
+      if (jump_.Jmps(helper[0])) break;
       throw InvalidInstruction(instruction);
     }
 

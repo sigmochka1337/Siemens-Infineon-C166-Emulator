@@ -13,10 +13,6 @@ class MoveUnit {
   bool Movb(const Operand* dst, const Operand* src);
   bool Movbs(const Operand* dst, const Operand* src);
   bool Movbz(const Operand* dst, const Operand* src);
-  bool Jmpa(ConditionCode condition, const Operand* address);
-  bool Jmpi(ConditionCode condition, const Operand* address);
-  bool Jmpr(ConditionCode condition, const Operand* displacement);
-  bool Jmps(const Operand* address);
 
  private:
   Word Mov(Word value);
@@ -50,11 +46,6 @@ class MoveUnit {
   bool Movbz(const RegisterOperand* dst, const RegisterOperand* src);
   bool Movbz(const RegisterOperand* dst, const DirectMemoryOperand* src);
   bool Movbz(const DirectMemoryOperand* dst, const RegisterOperand* src);
-
-  bool Jmpa(ConditionCode condition, const CodeAddressOperand* address);
-  bool Jmpi(ConditionCode condition, const IndirectMemoryOperand* address);
-  bool Jmpr(ConditionCode condition, const RelativeOperand* displacement);
-  bool Jmps(const SegmentedAddressOperand* address);
 
   constexpr void SetFlag(Word& psw, Word flag, bool enabled) noexcept {
     psw = enabled ? psw | flag : psw & ~flag;
