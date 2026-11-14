@@ -23,6 +23,7 @@ class Machine : public IMachine {
   void LoadBinaryFile(PhysicalAddress address, const std::filesystem::path& path);
 
  private:
+  static void CheckWordAddress(PhysicalAddress address);
   PhysicalAddress RegisterAddress(RegisterId id) const;
   static bool IsWordGpr(RegisterId id);
   static bool IsByteGpr(RegisterId id);
