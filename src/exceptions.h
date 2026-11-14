@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 #include <exception>
 #include <format>
 
@@ -9,6 +10,38 @@ class PhysicalAddressOutOfRange : public std::exception {
   explicit PhysicalAddressOutOfRange(PhysicalAddress address)
       : address_(address),
         msg_(std::format("Адрес `0x{:#06X}` не доступен. Доступные адреса: 0x000000 - 0xFFFFFF",
+                         address_)) {}
+
+  const char* what() const noexcept override { return msg_.c_str(); }
+
+  PhysicalAddress GetAddress() const { return address_; }
+
+ private:
+  PhysicalAddress address_;
+  std::string msg_;
+};
+
+class IllegalWordOperandAccess : public std::exception {
+ public:
+  explicit IllegalWordOperandAccess(PhysicalAddress address)
+      : address_(address),
+        msg_(std::format("Недопустимое обращение к слову по нечётному адресу `0x{:06X}`",
+                         address_)) {}
+
+  const char* what() const noexcept override { return msg_.c_str(); }
+
+  PhysicalAddress GetAddress() const { return address_; }
+
+ private:
+  PhysicalAddress address_;
+  std::string msg_;
+};
+
+class IllegalExternalBusAccess : public std::exception {
+ public:
+  explicit IllegalExternalBusAccess(PhysicalAddress address)
+      : address_(address),
+        msg_(std::format("Внешняя шина не настроена для обращения по адресу `0x{:06X}`",
                          address_)) {}
 
   const char* what() const noexcept override { return msg_.c_str(); }

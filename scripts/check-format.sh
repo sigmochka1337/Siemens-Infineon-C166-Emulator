@@ -16,7 +16,7 @@ if [[ -z "$formatter" ]]; then
 fi
 
 mapfile -t files < <(
-  find src tests tools -type f \( -name '*.cpp' -o -name '*.h' \) -print 2>/dev/null |
+  find src tests tools -type f \( -name '*.cpp' -o -name '*.cc' -o -name '*.h' \) -print 2>/dev/null |
     sort
 )
 
