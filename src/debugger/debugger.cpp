@@ -18,6 +18,9 @@ void Debugger::RemoveBreakpoint(PhysicalAddress address) {
     throw BreakpointDoesNotExist(address);
   }
 }
+std::vector<PhysicalAddress> Debugger::GetBreakpoints() const {
+  return std::vector<PhysicalAddress>(breakpoints_.begin(), breakpoints_.end());
+}
 void Debugger::Step() {
   CodeAddress pc = machine_.GetPC();
   Instruction instruction = fetcher_.Fetch(pc);

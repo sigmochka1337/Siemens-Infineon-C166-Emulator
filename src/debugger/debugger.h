@@ -1,5 +1,6 @@
 #pragma once
 #include <cstddef>
+#include <vector>
 #include <set>
 #include <string>
 
@@ -15,6 +16,7 @@ class Debugger : public IDebugger {
   void Run() override;
   void AddBreakpoint(PhysicalAddress address) override;
   void RemoveBreakpoint(PhysicalAddress address) override;
+  std::vector<PhysicalAddress> GetBreakpoints() const override;
   std::string NextInstructionToString() const override;
   Snapshot Trace() const override;
   Byte PhysicalRead8(PhysicalAddress address) const override;

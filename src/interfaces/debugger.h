@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 
 #include "types.h"
 
@@ -12,6 +13,7 @@ class IDebugger {
   virtual void Run() = 0;
   virtual void AddBreakpoint(PhysicalAddress address) = 0;
   virtual void RemoveBreakpoint(PhysicalAddress address) = 0;
+  virtual std::vector<PhysicalAddress> GetBreakpoints() const = 0;
 
   virtual Snapshot Trace() const = 0;
   virtual Byte PhysicalRead8(PhysicalAddress address) const = 0;

@@ -28,26 +28,50 @@ bool DebuggerCli::Handle(const std::string& line) {
   }
   try {
     if (command == "step" || command == "s") {
-      debugger_.Step();
+      int count = 1;
+      input >> count;
+      if (count <= 0) {
+        count = 1;
+      }
+      for (int i = 0; i < count; i++) {
+        debugger_.Step();
+      }
       out_ << "ok\n";
     } else if (command == "run" || command == "r") {
       debugger_.Run();
       out_ << "stopped\n";
     } else if (command == "break" || command == "b") {
-      PhysicalAddress address = 0;
-      if (input >> std::hex >> address) {
-        debugger_.AddBreakpoint(address);
-        out_ << "breakpoint added\n";
+      std::string arg;
+      if (!(input >> arg)) {
+        auto bps = debugger_.GetBreakpoints();
+        if (bps.empty()) {
+          out_ << "no breakpoints\n";
+        } else {
+          for (size_t i = 0; i < bps.size(); i++) {
+            out_ << std::format("{}: 0x{:06X}\n", i, bps[i]);
+          }
+        }
       } else {
-        out_ << "usage: break <hex address>\n";
+        try {
+          PhysicalAddress address = std::stoul(arg, nullptr, 16);
+          debugger_.AddBreakpoint(address);
+          out_ << "breakpoint added\n";
+        } catch (const std::exception&) {
+          out_ << "usage: break <hex address>\n";
+        }
       }
     } else if (command == "delete" || command == "d") {
-      PhysicalAddress address = 0;
-      if (input >> std::hex >> address) {
-        debugger_.RemoveBreakpoint(address);
-        out_ << "breakpoint removed\n";
+      size_t index = 0;
+      if (input >> index) {
+        auto bps = debugger_.GetBreakpoints();
+        if (index < bps.size()) {
+          debugger_.RemoveBreakpoint(bps[index]);
+          out_ << "breakpoint removed\n";
+        } else {
+          out_ << "error: index out of range\n";
+        }
       } else {
-        out_ << "usage: delete <hex address>\n";
+        out_ << "usage: delete <index>\n";
       }
     } else if (command == "quit" || command == "q") {
       return false;
@@ -90,7 +114,7 @@ bool DebuggerCli::Handle(const std::string& line) {
         out_ << "usage: wl <hex address> <hex value>\n";
       }
     } else {
-      out_ << "commands: step (s), run (r), break (b) <addr>, delete (d) <addr>, show (i), trace "
+      out_ << "commands: step (s), run (r), break (b) <addr>, delete (d) [addr], show (i), trace "
               "(t),\n"
               "          xp <addr>, xl <addr>, wp <addr> <val>, wl <addr> <val>, quit (q)\n";
     }
