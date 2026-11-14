@@ -4,18 +4,30 @@
 #include <stdexcept>
 #include <vector>
 
+#include "exceptions.h"
+
 namespace c166 {
 Machine::Machine(IRawMemory& memory) : memory_(memory) { Reset(); }
 Byte Machine::Read8(PhysicalAddress address) const { return memory_.Read8(address); }
 void Machine::Write8(PhysicalAddress address, Byte value) { memory_.Write8(address, value); }
 Word Machine::Read16(PhysicalAddress address) const {
+  CheckWordAddress(address);
   Byte low = memory_.Read8(address);
   Byte high = memory_.Read8(address + 1);
   return static_cast<Word>(low | (high << 8));
 }
 void Machine::Write16(PhysicalAddress address, Word value) {
+  CheckWordAddress(address);
   memory_.Write8(address, static_cast<Byte>(value & 0xFF));
   memory_.Write8(address + 1, static_cast<Byte>(value >> 8));
+}
+void Machine::CheckWordAddress(PhysicalAddress address) {
+  if (address > kMaxPhysicalAddress) {
+    throw PhysicalAddressOutOfRange(address);
+  }
+  if ((address & 1u) != 0) {
+    throw IllegalWordOperandAccess(address);
+  }
 }
 bool Machine::IsWordGpr(RegisterId id) { return id >= RegisterId::kR0 && id <= RegisterId::kR15; }
 bool Machine::IsByteGpr(RegisterId id) { return id >= RegisterId::kRL0 && id <= RegisterId::kRH7; }
