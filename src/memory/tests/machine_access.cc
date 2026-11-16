@@ -58,6 +58,17 @@ void CheckFlatMemory(test::Checks& checks, Machine& machine) {
   checks.Equal("loaded word", machine.Read16(address), 0x1234);
 }
 
+void CheckStackPointer(test::Checks& checks, IMachine& machine) {
+  // SP is a memory-mapped SFR at 0xFE12 (C166S V1, pp. 3-61–3-62).
+  constexpr PhysicalAddress kStackPointerAddress = 0xFE12;
+  machine.Write16(kStackPointerAddress, 0x0AC1);
+  checks.Equal("SP after word write", machine.ReadRegister(RegisterId::kSP), 0xFAC0);
+  machine.Write8(kStackPointerAddress, 0xB3);
+  checks.Equal("SP after low byte write", machine.Read16(kStackPointerAddress), 0xFAB2);
+  machine.Write8(kStackPointerAddress + 1, 0x07);
+  checks.Equal("SP after high byte write", machine.Read16(kStackPointerAddress), 0xF7B2);
+}
+
 }  // namespace
 
 int main() {
@@ -67,5 +78,6 @@ int main() {
   CheckPhysicalRange(checks, machine);
   CheckAlignment(checks, machine, raw);
   CheckFlatMemory(checks, machine);
+  CheckStackPointer(checks, machine);
   return checks.Result();
 }

@@ -7,9 +7,23 @@
 #include "exceptions.h"
 
 namespace c166 {
+namespace {
+
+constexpr PhysicalAddress kStackPointerAddress = 0xFE12;
+
+}  // namespace
+
 Machine::Machine(IRawMemory& memory) : memory_(memory) { Reset(); }
 Byte Machine::Read8(PhysicalAddress address) const { return memory_.Read8(address); }
-void Machine::Write8(PhysicalAddress address, Byte value) { memory_.Write8(address, value); }
+void Machine::Write8(PhysicalAddress address, Byte value) {
+  // SP[15:12] are fixed at 1111 and SP[0] is fixed at 0 (C166S V1, pp. 3-61–3-62).
+  if (address == kStackPointerAddress) {
+    value &= 0xFE;
+  } else if (address == kStackPointerAddress + 1) {
+    value |= 0xF0;
+  }
+  memory_.Write8(address, value);
+}
 Word Machine::Read16(PhysicalAddress address) const {
   CheckWordAddress(address);
   Byte low = memory_.Read8(address);
@@ -18,8 +32,8 @@ Word Machine::Read16(PhysicalAddress address) const {
 }
 void Machine::Write16(PhysicalAddress address, Word value) {
   CheckWordAddress(address);
-  memory_.Write8(address, static_cast<Byte>(value & 0xFF));
-  memory_.Write8(address + 1, static_cast<Byte>(value >> 8));
+  Write8(address, static_cast<Byte>(value & 0xFF));
+  Write8(address + 1, static_cast<Byte>(value >> 8));
 }
 void Machine::CheckWordAddress(PhysicalAddress address) {
   if (address > kMaxPhysicalAddress) {
@@ -48,7 +62,7 @@ PhysicalAddress Machine::SfrAddress(RegisterId id) {
     case RegisterId::kCP:
       return 0xFE10;
     case RegisterId::kSP:
-      return 0xFE12;
+      return kStackPointerAddress;
     case RegisterId::kSTKOV:
       return 0xFE14;
     case RegisterId::kSTKUN:
