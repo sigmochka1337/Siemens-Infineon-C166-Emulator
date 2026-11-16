@@ -94,6 +94,7 @@ inline constexpr unsigned kStackSizeShift = 13;
 }  // namespace syscon
 
 namespace tfr {
+inline constexpr Word kIllegalWordOperand = 1u << 2;
 inline constexpr Word kStackOverflow = 1u << 14;
 inline constexpr Word kStackUnderflow = 1u << 13;
 }  // namespace tfr
