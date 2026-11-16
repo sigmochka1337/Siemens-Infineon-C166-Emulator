@@ -1,6 +1,8 @@
 #include "memory/machine.h"
 
+#include <algorithm>
 #include <fstream>
+#include <iterator>
 #include <stdexcept>
 #include <vector>
 
@@ -11,11 +13,36 @@ namespace {
 
 constexpr PhysicalAddress kStackPointerAddress = 0xFE12;
 
+struct SfrMapping {
+  RegisterId id;
+  PhysicalAddress address;
+};
+
+constexpr SfrMapping kSfrs[] = {
+    {RegisterId::kDPP0, 0xFE00},   {RegisterId::kDPP1, 0xFE02},
+    {RegisterId::kDPP2, 0xFE04},   {RegisterId::kDPP3, 0xFE06},
+    {RegisterId::kMDH, 0xFE0C},    {RegisterId::kMDL, 0xFE0E},
+    {RegisterId::kCP, 0xFE10},     {RegisterId::kSP, kStackPointerAddress},
+    {RegisterId::kSTKOV, 0xFE14},  {RegisterId::kSTKUN, 0xFE16},
+    {RegisterId::kMDC, 0xFF0E},    {RegisterId::kPSW, 0xFF10},
+    {RegisterId::kSYSCON, 0xFF12}, {RegisterId::kTFR, 0xFFAC},
+};
+
 }  // namespace
 
 Machine::Machine(IRawMemory& memory) : memory_(memory) { Reset(); }
 Byte Machine::Read8(PhysicalAddress address) const { return memory_.Read8(address); }
 void Machine::Write8(PhysicalAddress address, Byte value) {
+  const PhysicalAddress word_address = address & ~1u;
+  if (std::ranges::find(kSfrs, word_address, &SfrMapping::address) != std::end(kSfrs)) {
+    // A byte write clears the other byte of an SFR (C166S V1, pp. 3-5–3-6).
+    const Word word = address == word_address ? value : static_cast<Word>(value << 8);
+    Write16(word_address, word);
+    return;
+  }
+  memory_.Write8(address, value);
+}
+void Machine::StoreByte(PhysicalAddress address, Byte value) {
   // SP[15:12] are fixed at 1111 and SP[0] is fixed at 0 (C166S V1, pp. 3-61–3-62).
   if (address == kStackPointerAddress) {
     value &= 0xFE;
@@ -32,8 +59,8 @@ Word Machine::Read16(PhysicalAddress address) const {
 }
 void Machine::Write16(PhysicalAddress address, Word value) {
   CheckWordAddress(address);
-  Write8(address, static_cast<Byte>(value & 0xFF));
-  Write8(address + 1, static_cast<Byte>(value >> 8));
+  StoreByte(address, static_cast<Byte>(value & 0xFF));
+  StoreByte(address + 1, static_cast<Byte>(value >> 8));
 }
 void Machine::CheckWordAddress(PhysicalAddress address) {
   if (address > kMaxPhysicalAddress) {
@@ -46,38 +73,11 @@ void Machine::CheckWordAddress(PhysicalAddress address) {
 bool Machine::IsWordGpr(RegisterId id) { return id >= RegisterId::kR0 && id <= RegisterId::kR15; }
 bool Machine::IsByteGpr(RegisterId id) { return id >= RegisterId::kRL0 && id <= RegisterId::kRH7; }
 PhysicalAddress Machine::SfrAddress(RegisterId id) {
-  switch (id) {
-    case RegisterId::kDPP0:
-      return 0xFE00;
-    case RegisterId::kDPP1:
-      return 0xFE02;
-    case RegisterId::kDPP2:
-      return 0xFE04;
-    case RegisterId::kDPP3:
-      return 0xFE06;
-    case RegisterId::kMDH:
-      return 0xFE0C;
-    case RegisterId::kMDL:
-      return 0xFE0E;
-    case RegisterId::kCP:
-      return 0xFE10;
-    case RegisterId::kSP:
-      return kStackPointerAddress;
-    case RegisterId::kSTKOV:
-      return 0xFE14;
-    case RegisterId::kSTKUN:
-      return 0xFE16;
-    case RegisterId::kMDC:
-      return 0xFF0E;
-    case RegisterId::kPSW:
-      return 0xFF10;
-    case RegisterId::kSYSCON:
-      return 0xFF12;
-    case RegisterId::kTFR:
-      return 0xFFAC;
-    default:
-      throw std::invalid_argument("register is not an SFR");
+  const auto sfr = std::ranges::find(kSfrs, id, &SfrMapping::id);
+  if (sfr == std::end(kSfrs)) {
+    throw std::invalid_argument("register is not an SFR");
   }
+  return sfr->address;
 }
 PhysicalAddress Machine::RegisterAddress(RegisterId id) const {
   if (IsWordGpr(id)) {
@@ -98,7 +98,7 @@ Word Machine::ReadRegister(RegisterId id) const {
 }
 void Machine::WriteRegister(RegisterId id, Word value) {
   if (IsByteGpr(id)) {
-    Write8(RegisterAddress(id), static_cast<Byte>(value));
+    StoreByte(RegisterAddress(id), static_cast<Byte>(value));
     return;
   }
   Write16(RegisterAddress(id), value);
@@ -130,7 +130,7 @@ void Machine::Reset() {
 }
 void Machine::LoadBinary(PhysicalAddress address, std::span<const Byte> bytes) {
   for (Byte byte : bytes) {
-    Write8(address++, byte);
+    StoreByte(address++, byte);
   }
 }
 void Machine::LoadBinaryFile(PhysicalAddress address, const std::filesystem::path& path) {
