@@ -24,6 +24,7 @@ class Machine : public IMachine {
 
  private:
   static void CheckWordAddress(PhysicalAddress address);
+  void StoreByte(PhysicalAddress address, Byte value);
   PhysicalAddress RegisterAddress(RegisterId id) const;
   static bool IsWordGpr(RegisterId id);
   static bool IsByteGpr(RegisterId id);
