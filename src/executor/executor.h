@@ -16,6 +16,8 @@ class Executor : public IExecutor {
   void Execute(const Instruction& instruction) override;
 
  private:
+  void ExecuteInstruction(const Instruction& instruction);
+
   IMachine& machine_;
   ALU alu_;
   MoveUnit move_;

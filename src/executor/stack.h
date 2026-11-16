@@ -1,4 +1,7 @@
 #pragma once
+
+#include <optional>
+
 #include "interfaces/memory.h"
 #include "operands.h"
 #include "types.h"
@@ -22,7 +25,7 @@ class Stack {
   bool Retp(const Operand* dst);
   bool Reti();
 
-  // Class A traps are serviced after the current instruction has completed.
+  void RequestTrap(Word flag);
   void ServiceTraps();
 
  private:
@@ -39,7 +42,6 @@ class Stack {
   void PushWord(Word value);
   Word PopWord();
   PhysicalAddress ResolveStackAddress(Word sp) const;
-  void RequestTrap(Word flag);
   void SetDataFlags(Word value);
 
   constexpr void SetFlag(Word& psw, Word flag, bool enabled) noexcept {
@@ -55,6 +57,7 @@ class Stack {
   }
 
   IMachine& machine_;
-  std::optional<Word> trap_frame_sp_;
+  std::optional<Word> class_a_frame_sp_;
+  std::optional<Word> class_b_frame_sp_;
 };
 }  // namespace c166

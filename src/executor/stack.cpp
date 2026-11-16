@@ -227,8 +227,7 @@ bool Stack::Retp(const RegisterOperand* dst) {
 // ------- RETI -------
 // --------------------
 bool Stack::Reti() {
-  const bool returning_from_trap =
-      trap_frame_sp_ && *trap_frame_sp_ == machine_.ReadRegister(RegisterId::kSP);
+  const Word sp = machine_.ReadRegister(RegisterId::kSP);
   CodeAddress pc = machine_.GetPC();
   pc.offset = PopWord();
   if ((machine_.ReadRegister(RegisterId::kSYSCON) & syscon::kSegmentationDisabled) == 0) {
@@ -239,7 +238,11 @@ bool Stack::Reti() {
   Word psw_value = PopWord();
   machine_.SetPC(pc);
   machine_.WriteRegister(RegisterId::kPSW, psw_value);
-  if (returning_from_trap) trap_frame_sp_.reset();
+  if (class_a_frame_sp_ == sp) {
+    class_a_frame_sp_.reset();
+  } else if (!class_a_frame_sp_ && class_b_frame_sp_ == sp) {
+    class_b_frame_sp_.reset();
+  }
   return true;
 }
 
@@ -298,14 +301,20 @@ void Stack::RequestTrap(Word flag) {
 }
 
 void Stack::ServiceTraps() {
-  // Class A traps cannot interrupt an active Class A handler. TFR flags remain
-  // pending until software clears them; RETI permits servicing them again.
-  if (trap_frame_sp_) return;
+  constexpr Word kClassBVector = 0x0028;
+  // Class A can interrupt class B. Pending TFR flags survive until software clears them.
+  if (class_a_frame_sp_) return;
   const Word flags = machine_.ReadRegister(RegisterId::kTFR);
-  const Word trap = (flags & tfr::kStackOverflow) != 0    ? tfr::kStackOverflow
-                    : (flags & tfr::kStackUnderflow) != 0 ? tfr::kStackUnderflow
-                                                          : 0;
-  if (trap == 0) return;
+  Word vector;
+  if ((flags & tfr::kStackOverflow) != 0) {
+    vector = 0x0010;
+  } else if ((flags & tfr::kStackUnderflow) != 0) {
+    vector = 0x0018;
+  } else if ((flags & tfr::kIllegalWordOperand) != 0 && !class_b_frame_sp_) {
+    vector = kClassBVector;
+  } else {
+    return;
+  }
 
   const Word saved_psw = machine_.ReadRegister(RegisterId::kPSW);
   const CodeAddress return_address = machine_.GetPC();
@@ -314,9 +323,10 @@ void Stack::ServiceTraps() {
   PushWord(saved_psw);
   if (segmented) PushWord(return_address.segment);
   PushWord(return_address.offset);
-  trap_frame_sp_ = machine_.ReadRegister(RegisterId::kSP);
+  auto& frame_sp = vector == kClassBVector ? class_b_frame_sp_ : class_a_frame_sp_;
+  frame_sp = machine_.ReadRegister(RegisterId::kSP);
   machine_.WriteRegister(RegisterId::kPSW, saved_psw | psw::kPriorityMask);
-  machine_.SetPC({0, static_cast<Word>(trap == tfr::kStackOverflow ? 0x0010 : 0x0018)});
+  machine_.SetPC({0, vector});
 }
 
 void Stack::SetDataFlags(Word value) {

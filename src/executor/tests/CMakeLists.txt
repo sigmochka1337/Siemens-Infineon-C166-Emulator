@@ -28,16 +28,21 @@ else()
 endif()
 
 # Use .cc to keep test sources outside the application's recursive *.cpp glob.
-file(GLOB instruction_tests CONFIGURE_DEPENDS "instructions/*.cc")
+file(GLOB instruction_entries CONFIGURE_DEPENDS
+    "${CMAKE_CURRENT_SOURCE_DIR}/instructions/*/main.cc"
+)
 
-foreach(source IN LISTS instruction_tests)
-    get_filename_component(instruction "${source}" NAME_WE)
+foreach(entry IN LISTS instruction_entries)
+    get_filename_component(instruction_dir "${entry}" DIRECTORY)
+    get_filename_component(instruction "${instruction_dir}" NAME)
+    file(GLOB sources CONFIGURE_DEPENDS "${instruction_dir}/*.cc")
     set(target "c166_test_${instruction}")
+    set(test_name "instruction.${instruction}")
 
-    add_executable("${target}" "${source}")
+    add_executable("${target}" ${sources})
     target_link_libraries("${target}" PRIVATE c166_core)
     target_include_directories("${target}" PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
-    add_test(NAME "instruction.${instruction}" COMMAND "${target}")
-    set_tests_properties("instruction.${instruction}" PROPERTIES LABELS instruction)
+    add_test(NAME "${test_name}" COMMAND "${target}")
+    set_tests_properties("${test_name}" PROPERTIES LABELS "instruction;${instruction}")
 endforeach()

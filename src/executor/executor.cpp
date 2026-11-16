@@ -43,6 +43,15 @@ class Helper {
 }  // namespace
 
 void Executor::Execute(const Instruction& instruction) {
+  try {
+    ExecuteInstruction(instruction);
+  } catch (const IllegalWordOperandAccess&) {
+    stack_.RequestTrap(tfr::kIllegalWordOperand);
+  }
+  stack_.ServiceTraps();
+}
+
+void Executor::ExecuteInstruction(const Instruction& instruction) {
   Helper helper(instruction, machine_);
   helper.AdvancePC();
 
@@ -246,6 +255,5 @@ void Executor::Execute(const Instruction& instruction) {
     default:
       throw UnknownInstruction(instruction);
   }
-  stack_.ServiceTraps();
 }
 }  // namespace c166
