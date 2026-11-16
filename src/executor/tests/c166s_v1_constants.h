@@ -11,9 +11,14 @@ inline constexpr Word kOverflow = 0x0004;
 inline constexpr Word kZero = 0x0008;
 inline constexpr Word kEndOfTable = 0x0010;
 inline constexpr Word kPriorityMask = 0xF000;
+inline constexpr Word kIllegalInstruction = 0x0002;
 inline constexpr Word kIllegalWord = 0x0004;
+inline constexpr Word kStackUnderflow = 0x2000;
+inline constexpr Word kStackOverflow = 0x4000;
 inline constexpr Word kSegmentationDisabled = 0x0800;
 inline constexpr Word kResetStackPointer = 0xFC00;  // p. 3-61
+inline constexpr CodeAddress kStackOverflowVector{0, 0x0010};
+inline constexpr CodeAddress kStackUnderflowVector{0, 0x0018};
 inline constexpr CodeAddress kClassBVector{0, 0x0028};
 
 }  // namespace c166::test

@@ -18,15 +18,17 @@ class Checks {
   }
 
   void Equal(std::string_view field, Dword actual, Dword expected) {
-    if (actual == expected) {
-      return;
+    if (actual != expected) {
+      Fail(std::format("{} expected 0x{:X}, got 0x{:X}", field, expected, actual));
     }
+  }
+
+  void Fail(std::string_view message) {
     if (!case_failed_) {
       ++failed_cases_;
       case_failed_ = true;
     }
-    std::cerr << std::format("{}: {} expected 0x{:X}, got 0x{:X}\n", case_name_, field, expected,
-                             actual);
+    std::cerr << std::format("{}: {}\n", case_name_, message);
   }
 
   int Result() const {
