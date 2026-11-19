@@ -146,6 +146,7 @@ std::string MnemonicToString(Mnemonic mnemonic) {
       return "unknown";
   }
 }
+
 std::string ConditionCodeToString(ConditionCode condition) {
   switch (condition) {
     case ConditionCode::kUC:

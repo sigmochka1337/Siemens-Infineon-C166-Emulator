@@ -1,0 +1,35 @@
+#pragma once
+
+#include "executor/alu.h"
+#include "executor/bit_processor.h"
+#include "executor/jump_unit.h"
+#include "executor/move_unit.h"
+#include "executor/stack.h"
+#include "interfaces/executor.h"
+#include "interfaces/memory.h"
+
+namespace c166 {
+class Executor : public IExecutor {
+ public:
+  Executor(IMachine& machine)
+      : machine_(machine),
+        alu_(machine),
+        bits_(machine),
+        move_(machine),
+        jump_(machine),
+        stack_(machine) {}
+
+  void Execute(const Instruction& instruction) override;
+
+ private:
+  // Returns newly set stack-limit flags whose service is delayed by one instruction.
+  Word ExecuteInstruction(const Instruction& instruction);
+
+  IMachine& machine_;
+  ALU alu_;
+  BitProcessor bits_;
+  MoveUnit move_;
+  JumpUnit jump_;
+  Stack stack_;
+};
+}  // namespace c166
