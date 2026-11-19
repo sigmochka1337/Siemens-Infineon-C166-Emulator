@@ -48,6 +48,7 @@ class IMachine {
     }
   }
 
+  virtual void DisableWatchdog() {}
   virtual void ServiceWatchdog() { Write16(0xFEAE, Read16(0xFFAE) & 0xFF00); }
   virtual void Reset() = 0;
   virtual PhysicalAddress Resolve(LogicalAddress address) = 0;
