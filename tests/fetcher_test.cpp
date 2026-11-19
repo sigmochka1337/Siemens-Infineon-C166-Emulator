@@ -96,6 +96,7 @@ void TestGoldenVectors() {
       {{0xEB, 0x88}, 2, "retp PSW"},
       {{0xEB, 0x09}, 2, "retp SP"},
       {{0x9B, 0x02}, 2, "trap #0x0001"},
+      {{0xA5, 0x5A, 0xA5, 0xA5}, 4, "diswdt"},
       {{0xA7, 0x58, 0xA7, 0xA7}, 4, "srvwdt"},
       {{0xD1, 0x80}, 2, "extr #0x0001"},
       {{0xD1, 0x90}, 2, "extr #0x0002"},
@@ -327,6 +328,18 @@ void TestErrors() {
 
   machine.ClearMemory();
   Put(machine, kBase, {0xFB, 0x00});  // RETI fixed byte
+  CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
+
+  machine.ClearMemory();
+  Put(machine, kBase, {0xA5, 0x58, 0xA5, 0xA5});
+  CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
+
+  machine.ClearMemory();
+  Put(machine, kBase, {0xA5, 0x5A, 0xA7, 0xA5});
+  CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
+
+  machine.ClearMemory();
+  Put(machine, kBase, {0xA5, 0x5A, 0xA5, 0xA7});
   CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
 
   // Инструкция на 4 байта не должна пересекать границу 64-КБ сегмента.

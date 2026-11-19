@@ -71,7 +71,7 @@ enum class Format : std::uint8_t {
   kBitRel,    // half-word в byte1, rel8 в byte2, bit в byte3[7:4]
 
   kTrap,       // #trap в byte1 (номер * 2)
-  kSrvwdt,     // A7 58 A7 A7
+  kWatchdog,   // opcode, complement, opcode, opcode
   kReti,       // FB 88
   kExtAtomic,  // D1 <range>: EXTR/ATOMIC #1..#4
 
@@ -285,7 +285,9 @@ const std::vector<Rule>& Rules() {
                       CondSource::kNone});
     result.push_back({0xFF, 0x9B, Mnemonic::kTrap, Format::kTrap, 2,
                       CondSource::kNone});
-    result.push_back({0xFF, 0xA7, Mnemonic::kSrvwdt, Format::kSrvwdt, 4,
+    result.push_back({0xFF, 0xA5, Mnemonic::kDiswdt, Format::kWatchdog, 4,
+                      CondSource::kNone});
+    result.push_back({0xFF, 0xA7, Mnemonic::kSrvwdt, Format::kWatchdog, 4,
                       CondSource::kNone});
     result.push_back({0xFF, 0xCC, Mnemonic::kNop, Format::kNone, 2,
                       CondSource::kNone});
@@ -830,8 +832,8 @@ Instruction Fetcher::Fetch(CodeAddress pc) {
       instruction.operands.push_back(MakeImmediate(byte1 >> 1));
       return instruction;
 
-    case Format::kSrvwdt:
-      if (raw[1] != 0x58 || raw[2] != 0xA7 || raw[3] != 0xA7) {
+    case Format::kWatchdog:
+      if (byte1 != static_cast<Byte>(~opcode) || raw[2] != opcode || raw[3] != opcode) {
         Invalid(pc, raw);
       }
       return instruction;
