@@ -24,6 +24,7 @@ constexpr PhysicalAddress kMdc = 0xFF0E;
 constexpr Byte kMdrInUse = 1u << 4;
 constexpr PhysicalAddress kWdt = 0xFEAE;
 constexpr PhysicalAddress kWdtCon = 0xFFAE;
+constexpr Word kWatchdogTimerEnable = 1u << 6;
 
 constexpr SfrMapping kSfrs[] = {
     {RegisterId::kDPP0, 0xFE00},   {RegisterId::kDPP1, 0xFE02},
@@ -128,14 +129,27 @@ PhysicalAddress Machine::Resolve(LogicalAddress address) {
   Word page = ReadRegister(dpp) & 0x03FF;
   return (static_cast<PhysicalAddress>(page) << 14) | (address & 0x3FFF);
 }
+void Machine::DisableWatchdog() {
+  if (!watchdog_disable_locked_) watchdog_reset_enabled_ = false;
+}
 void Machine::ServiceWatchdog() {
+  ReloadWatchdog();
+  watchdog_disable_locked_ = true;
+}
+bool Machine::WatchdogCounterEnabled() const {
+  // TIMEN keeps the counter running in interrupt mode (C166S V1, pp. 9-2–9-3).
+  return watchdog_reset_enabled_ || (Read16(kWdtCon) & kWatchdogTimerEnable) != 0;
+}
+void Machine::ReloadWatchdog() {
   memory_.Write8(kWdt, 0);
   memory_.Write8(kWdt + 1, memory_.Read8(kWdtCon + 1));
 }
 void Machine::Reset() {
   Cpu() = {};
+  watchdog_reset_enabled_ = true;
+  watchdog_disable_locked_ = false;
   Write16(kWdtCon, 0x0081);
-  ServiceWatchdog();
+  ReloadWatchdog();
   pc_ = {0, 0};
   WriteRegister(RegisterId::kDPP0, 0);
   WriteRegister(RegisterId::kDPP1, 1);
