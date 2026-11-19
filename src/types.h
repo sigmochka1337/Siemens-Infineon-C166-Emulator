@@ -178,6 +178,7 @@ enum class Mnemonic {
   kAtomic,
   kMovBS,
   kMovBZ,
+  kDiswdt,
 };
 
 // 4-битное поле условия C166. Имена — канонические; ассемблерные алиасы
