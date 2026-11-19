@@ -1,5 +1,4 @@
-// Golden-векторы Fetch/Decode. Байты взяты из реального вывода Keil A166
-// V5.38.2.0 (C166 classic) и сверены с описанием операндов C166 ISM V2.0.
+// Golden-векторы Fetch/Decode по C166S V1 SubSystem User's Manual, гл. 5–6.
 #include <cstdio>
 #include <exception>
 #include <initializer_list>
@@ -106,6 +105,16 @@ void TestGoldenVectors() {
       {{0xD1, 0xA0}, 2, "extr #0x0003"},
       {{0xD1, 0x00}, 2, "atomic #0x0001"},
       {{0xD1, 0x10}, 2, "atomic #0x0002"},
+
+      // EXTended: #seg8/#pag10 и Rw, пределы #irang2.
+      {{0xD7, 0x00, 0xFF, 0x00}, 4, "exts #0x00FF, #0x0001"},
+      {{0xDC, 0x3F}, 2, "exts R15, #0x0004"},
+      {{0xD7, 0x50, 0x34, 0x02}, 4, "extp #0x0234, #0x0002"},
+      {{0xDC, 0x62}, 2, "extp R2, #0x0003"},
+      {{0xD7, 0xA0, 0x43, 0x00}, 4, "extsr #0x0043, #0x0003"},
+      {{0xDC, 0x91}, 2, "extsr R1, #0x0002"},
+      {{0xD7, 0xF0, 0xFF, 0x03}, 4, "extpr #0x03FF, #0x0004"},
+      {{0xDC, 0xC0}, 2, "extpr R0, #0x0001"},
 
       // Ветвление.
       {{0xBB, 0x17}, 2, "callr +23"},
@@ -227,6 +236,7 @@ void TestGoldenVectors() {
       {{0x88, 0x01}, 2, "mov [-R1], R0"},
       {{0xC8, 0x12}, 2, "mov [R1], [R2]"},
       {{0xD8, 0x12}, 2, "mov [R1+], [R2]"},
+      {{0xE8, 0x12}, 2, "mov [R1], [R2+]"},
 
       // MOVB.
       {{0xE1, 0x30}, 2, "movb RL0, #0x0003"},
@@ -247,6 +257,25 @@ void TestGoldenVectors() {
       {{0x89, 0x01}, 2, "movb [-R1], RL0"},
       {{0xC9, 0x12}, 2, "movb [R1], [R2]"},
       {{0xD9, 0x12}, 2, "movb [R1+], [R2]"},
+      {{0xE9, 0x31}, 2, "movb [R3], [R1+]"},
+      {{0xA4, 0x0F, 0x35, 0x12}, 4, "movb [R15], 0x1235"},
+      {{0xB4, 0x03, 0x35, 0x12}, 4, "movb 0x1235, [R3]"},
+
+      // reg8 адресует SFR/ESFR для всех длинных форм.
+      {{0xE6, 0x09, 0x00, 0xFB}, 4, "mov SP, #0xFB00"},
+      {{0x06, 0x09, 0x02, 0x00}, 4, "add SP, #0x0002"},
+      {{0xF2, 0x00, 0x34, 0x12}, 4, "mov DPP0, 0x1234"},
+      {{0x24, 0x8F, 0x00, 0x90}, 4, "sub 0x9000, 0xFF1E"},
+      {{0x63, 0x88, 0x35, 0x12}, 4, "andb PSW, 0x1235"},
+      {{0xF7, 0xD6, 0x35, 0x12}, 4, "movb 0x1235, TFR"},
+      {{0xEB, 0x04}, 2, "retp 0xFE08"},
+      {{0xEC, 0xD6}, 2, "push TFR"},
+      {{0xE2, 0xD7, 0x34, 0x12}, 4, "pcall 0xFFAE, 0x1234"},
+
+      // Последний байт формы #data8 не входит в константу.
+      {{0xE7, 0xF1, 0x34, 0xAB}, 4, "movb RH0, #0x0034"},
+      {{0x67, 0x88, 0x12, 0xFF}, 4, "andb PSW, #0x0012"},
+      {{0x47, 0xF0, 0x80, 0xFF}, 4, "cmpb RL0, #0x0080"},
 
       // MOVBS/MOVBZ.
       {{0xD0, 0x20}, 2, "movbs R0, RL1"},
@@ -255,6 +284,8 @@ void TestGoldenVectors() {
       {{0xC2, 0xF0, 0x34, 0x12}, 4, "movbz R0, 0x1234"},
       {{0xC5, 0xF0, 0x34, 0x12}, 4, "movbz 0x1234, RL0"},
       {{0xD5, 0xF0, 0x34, 0x12}, 4, "movbs 0x1234, RL0"},
+      {{0xD2, 0x06, 0x35, 0x12}, 4, "movbs MDH, 0x1235"},
+      {{0xC5, 0x88, 0x34, 0x12}, 4, "movbz 0x1234, PSW"},
   };
 
   for (const Case& test : cases) {
@@ -302,10 +333,6 @@ void TestErrors() {
   CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
 
   machine.ClearMemory();
-  Put(machine, kBase, {0xF2, 0x00, 0x34, 0x12});  // MOV Rw,mem без 0xF в byte1
-  CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
-
-  machine.ClearMemory();
   Put(machine, kBase, {0xCC, 0x01});  // NOP с ненулевым вторым байтом
   CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
 
@@ -318,47 +345,46 @@ void TestErrors() {
   CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
 
   machine.ClearMemory();
-  Put(machine, kBase, {0xEB, 0x04});  // RETP: неизвестный special-регистр
-  CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
-
-  machine.ClearMemory();
   Put(machine, kBase, {0xCA, 0x01, 0x34, 0x12});  // CALLA с мусором в byte1
   CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
 
-  machine.ClearMemory();
-  Put(machine, kBase, {0xA7, 0x00, 0x00, 0x00});  // SRVWDT fixed bytes
-  CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
-
-  machine.ClearMemory();
-  Put(machine, kBase, {0xFB, 0x00});  // RETI fixed byte
-  CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
-
-  machine.ClearMemory();
-  Put(machine, kBase, {0xA5, 0x58, 0xA5, 0xA5});
-  CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
-
-  machine.ClearMemory();
-  Put(machine, kBase, {0xA5, 0x5A, 0xA7, 0xA5});
-  CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
-
-  machine.ClearMemory();
-  Put(machine, kBase, {0xA5, 0x5A, 0xA5, 0xA7});
-  CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
-
-  // C166S V1, pp. 3-31 and 6-38. The executor raises PRTFLT for a broken EINIT.
-  const std::initializer_list<Byte> broken_einit[] = {
-      {0xB5, 0x00, 0xB5, 0xB5},
-      {0xB5, 0x4A, 0x00, 0xB5},
-      {0xB5, 0x4A, 0xB5, 0x00},
+  const std::initializer_list<Byte> invalid_encodings[] = {
+      {0xFB, 0x00},                    // RETI: фиксированный второй байт.
+      {0x9B, 0xFF},                    // TRAP: фиксированный нулевой бит.
+      {0xD1, 0x40},                    // D1 допускает только ATOMIC и EXTR.
+      {0xD7, 0x01, 0x00, 0x00},        // D7: фиксированный младший полубайт.
+      {0xD7, 0x00, 0x00, 0x01},        // EXTS: сегмент шириной 8 бит.
+      {0xD7, 0x40, 0x00, 0x04},        // EXTP: номер страницы шириной 10 бит.
+      {0xA4, 0xF1, 0x35, 0x12},        // MOVB [Rw], mem: фиксированный полубайт.
   };
-  for (auto bytes : broken_einit) {
+  for (const auto bytes : invalid_encodings) {
     machine.ClearMemory();
     Put(machine, kBase, bytes);
-    const Instruction instruction = fetcher.Fetch(CodeAddress{0, kBase});
-    CHECK(instruction.mnemonic == Mnemonic::kEinit);
-    CHECK(instruction.size == 4);
-    CHECK(instruction.operands.empty());
-    CHECK(instruction.protection_fault);
+    CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
+  }
+
+  // C166S V1, p. 3-31. Executor вызывает PRTFLT при нарушении защиты.
+  struct ProtectedCase {
+    Byte opcode;
+    Byte complement;
+    Mnemonic mnemonic;
+  };
+  const ProtectedCase protected_cases[] = {
+      {0xA5, 0x5A, Mnemonic::kDiswdt},
+      {0xA7, 0x58, Mnemonic::kSrvwdt},
+      {0xB5, 0x4A, Mnemonic::kEinit},
+  };
+  for (const auto& test : protected_cases) {
+    for (PhysicalAddress offset = 0; offset < 4; ++offset) {
+      machine.ClearMemory();
+      Put(machine, kBase, {test.opcode, test.complement, test.opcode, test.opcode});
+      if (offset != 0) machine.Write8(kBase + offset, 0);
+      const auto instruction = fetcher.Fetch(CodeAddress{0, kBase});
+      CHECK(instruction.mnemonic == test.mnemonic);
+      CHECK(instruction.size == 4);
+      CHECK(instruction.operands.empty());
+      CHECK(instruction.protection_fault == (offset != 0));
+    }
   }
 
   // Инструкция на 4 байта не должна пересекать границу 64-КБ сегмента.

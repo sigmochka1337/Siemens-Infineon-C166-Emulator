@@ -9,20 +9,20 @@
 
 #include "exceptions.h"
 #include "operands.h"
+#include "short_register.h"
 
 namespace c166 {
 namespace {
 
-// Формы операндов C166 classic. Раскладка полей сверена с реальным выводом
-// Keil A166 V5.38.2.0 и описанием операндов из C166 ISM V2.0.
+// Формы операндов по C166S V1 SubSystem User's Manual, гл. 5–6.
 enum class Format : std::uint8_t {
   kNone,
 
   kRegReg,              // dst[7:4] | src[3:0]
   kRegImm4,             // imm4[7:4] | reg[3:0]
-  kRegImm16,            // 0xF[7:4] | reg[3:0], data16
-  kRegMem,              // 0xF[7:4] | reg[3:0], mem16
-  kMemReg,              // mem16, 0xF[7:4] | reg[3:0]
+  kRegImm16,            // reg8, data16
+  kRegMem,              // reg8, mem16
+  kMemReg,              // mem16, reg8
   kRegIndirect,         // reg[7:4] | base[3:0] -> reg, [Rbase]
   kRegIndirectInc,      // reg[7:4] | base[3:0] -> reg, [Rbase+]
   kMemIndirectReg,      // reg[7:4] | base[3:0] -> [Rbase], reg
@@ -34,13 +34,12 @@ enum class Format : std::uint8_t {
   kMemPreDecByteReg,    // byte_reg[7:4] | base[3:0] -> [-Rbase], byte_reg
   kMemIndirectMemIndirect,      // dst_base[7:4] | src_base[3:0]
   kMemIndirectIncMemIndirect,   // dst_base[7:4] | src_base[3:0], dst+
-  kMemByteIndirectMemIndirect,  // то же для MOVB
-  kMemByteIndirectIncMemIndirect,
+  kMemIndirectMemIndirectInc,   // dst_base[7:4] | src_base[3:0], src+
   kShort,               // dst[7:4] | imm3/[R0..R3]/[R0..R3+][3:0]
 
   kByteRegReg,
   kByteRegImm4,
-  kByteRegImm16,
+  kByteRegImm8,
   kByteRegMem,
   kByteMemReg,
   kByteRegIndirect,
@@ -62,9 +61,9 @@ enum class Format : std::uint8_t {
   kCondCAddr,       // condition в byte1[7:4], caddr16
   kCondIndirectReg, // condition в byte1[7:4], base в byte1[3:0]
   kSegCAddr,        // seg в byte1, caddr16
-  kPcall,           // 0xF[7:4] | reg[3:0], caddr16
-  kRetp,            // 0xF[7:4] | reg[3:0]
-  kPushPop,         // 0xF[7:4] | reg[3:0]
+  kPcall,           // reg8, caddr16
+  kRetp,            // reg8
+  kPushPop,         // reg8
 
   kBitSet,    // bit в opcode[7:4], half-word в byte1
   kBitClear,  // bit в opcode[7:4], half-word в byte1
@@ -75,13 +74,9 @@ enum class Format : std::uint8_t {
   kProtected,  // opcode, complement, opcode, opcode
   kReti,       // FB 88
   kExtAtomic,  // D1 <range>: EXTR/ATOMIC #1..#4
+  kExtendedAddress,  // DC Rw, #range / D7 #seg|#pag, #range
 
-  kMovBsReg, // word_reg[7:4] | byte_reg[3:0]
-  kMovBzReg,
-  kMovBsMem, // 0xF[7:4] | word_reg[3:0], mem16
-  kMovBzMem,
-  kMovBsMemReg, // 0xF[7:4] | byte_reg[3:0], mem16
-  kMovBzMemReg,
+  kWordByteReg,  // byte GPR[7:4] | word GPR[3:0]
 };
 
 enum class CondSource : std::uint8_t {
@@ -159,19 +154,8 @@ std::unique_ptr<Operand> MakeRelative(std::int8_t words) {
   return std::make_unique<RelativeOperand>(words);
 }
 
-// Номер бита лежит в старшем ниббле opcode/byte3, а byte1 — младший байт
-// полуслова (word_address / 2). Старший байт восстанавливается по признаку
-// SFR-области: у SFR полуслово имеет вид 0x7Fxx.
-// Короткий прямой адрес C166 — это SFR-область: в byte1 лежит младший байт
-// полуслова (address / 2), старший байт полуслова всегда 0x7F.
-Word HalfWordAddress(Byte half_word) {
-  return static_cast<Word>((0x7F00u | half_word) << 1);
-}
-
 Word BitWordAddress(Byte bitoff) {
-  // C166 ISM V2.0, 6.1: short bitoff 00..7F -> base 00FD00H,
-  // bitoff 80..EF -> base 00FF00H. Для F0..FF адрес зависит от CP; декодер
-  // его не знает и оставляет вычисленное значение как приближение.
+  // C166S V1, табл. 3-12. Executor выбирает SFR/ESFR и разрешает F0..FF через CP.
   if (bitoff <= 0x7F) {
     return static_cast<Word>(0xFD00u + 2u * bitoff);
   }
@@ -182,35 +166,8 @@ std::unique_ptr<Operand> MakeBit(Byte half_word, Byte bit) {
   return std::make_unique<BitOperand>(BitWordAddress(half_word), bit);
 }
 
-std::optional<RegisterId> SpecialRegister(Byte short_address) {
-  switch (short_address) {
-    case 0x00:
-      return RegisterId::kDPP0;
-    case 0x01:
-      return RegisterId::kDPP1;
-    case 0x02:
-      return RegisterId::kDPP2;
-    case 0x03:
-      return RegisterId::kDPP3;
-    case 0x06:
-      return RegisterId::kMDH;
-    case 0x07:
-      return RegisterId::kMDL;
-    case 0x08:
-      return RegisterId::kCP;
-    case 0x09:
-      return RegisterId::kSP;
-    case 0x0A:
-      return RegisterId::kSTKOV;
-    case 0x0B:
-      return RegisterId::kSTKUN;
-    case 0x87:
-      return RegisterId::kMDC;
-    case 0x88:
-      return RegisterId::kPSW;
-    default:
-      return std::nullopt;
-  }
+std::unique_ptr<Operand> MakeShortRegister(Byte address, bool byte = false) {
+  return std::make_unique<RegisterOperand>(DecodeShortRegister(address, byte));
 }
 
 void AddAluFamily(std::vector<Rule>& rules, Byte base, Mnemonic mnemonic,
@@ -227,7 +184,7 @@ void AddAluFamily(std::vector<Rule>& rules, Byte base, Mnemonic mnemonic,
                      CondSource::kNone});
   }
   rules.push_back({0xFF, static_cast<Byte>(base + 6), mnemonic,
-                   byte_operation ? Format::kByteRegImm16 : Format::kRegImm16, 4,
+                   byte_operation ? Format::kByteRegImm8 : Format::kRegImm16, 4,
                    CondSource::kNone});
   rules.push_back({0xFF, static_cast<Byte>(base + 8), mnemonic,
                    byte_operation ? Format::kByteShort : Format::kShort, 2,
@@ -275,6 +232,10 @@ const std::vector<Rule>& Rules() {
     result.push_back({0xFF, 0xFB, Mnemonic::kReti, Format::kReti, 2,
                       CondSource::kNone});
     result.push_back({0xFF, 0xD1, Mnemonic::kExtr, Format::kExtAtomic, 2,
+                      CondSource::kNone});
+    result.push_back({0xFF, 0xD7, Mnemonic::kExts, Format::kExtendedAddress, 4,
+                      CondSource::kNone});
+    result.push_back({0xFF, 0xDC, Mnemonic::kExts, Format::kExtendedAddress, 2,
                       CondSource::kNone});
     result.push_back({0xFF, 0x0A, Mnemonic::kBfldl, Format::kBitField, 4,
                       CondSource::kNone});
@@ -398,16 +359,23 @@ const std::vector<Rule>& Rules() {
                       Format::kMemIndirectMemIndirect, 2, CondSource::kNone});
     result.push_back({0xFF, 0xD8, Mnemonic::kMov,
                       Format::kMemIndirectIncMemIndirect, 2, CondSource::kNone});
-    result.push_back({0xFF, 0xC9, Mnemonic::kMovB,
-                      Format::kMemByteIndirectMemIndirect, 2, CondSource::kNone});
-    result.push_back({0xFF, 0xD9, Mnemonic::kMovB,
-                      Format::kMemByteIndirectIncMemIndirect, 2,
+    result.push_back({0xFF, 0xE8, Mnemonic::kMov, Format::kMemIndirectMemIndirectInc, 2,
                       CondSource::kNone});
 
     // MoveUnit: MOVB.
+    result.push_back({0xFF, 0xA4, Mnemonic::kMovB, Format::kMemIndirectMem, 4,
+                      CondSource::kNone});
+    result.push_back({0xFF, 0xB4, Mnemonic::kMovB, Format::kMemIndirectFromMem, 4,
+                      CondSource::kNone});
+    result.push_back({0xFF, 0xC9, Mnemonic::kMovB, Format::kMemIndirectMemIndirect, 2,
+                      CondSource::kNone});
+    result.push_back({0xFF, 0xD9, Mnemonic::kMovB, Format::kMemIndirectIncMemIndirect, 2,
+                      CondSource::kNone});
+    result.push_back({0xFF, 0xE9, Mnemonic::kMovB, Format::kMemIndirectMemIndirectInc, 2,
+                      CondSource::kNone});
     result.push_back({0xFF, 0xE1, Mnemonic::kMovB, Format::kByteRegImm4, 2,
                       CondSource::kNone});
-    result.push_back({0xFF, 0xE7, Mnemonic::kMovB, Format::kByteRegImm16, 4,
+    result.push_back({0xFF, 0xE7, Mnemonic::kMovB, Format::kByteRegImm8, 4,
                       CondSource::kNone});
     result.push_back({0xFF, 0xF1, Mnemonic::kMovB, Format::kByteRegReg, 2,
                       CondSource::kNone});
@@ -427,17 +395,17 @@ const std::vector<Rule>& Rules() {
                       CondSource::kNone});
 
     // MoveUnit: MOVBS/MOVBZ.
-    result.push_back({0xFF, 0xD0, Mnemonic::kMovBS, Format::kMovBsReg, 2,
+    result.push_back({0xFF, 0xD0, Mnemonic::kMovBS, Format::kWordByteReg, 2,
                       CondSource::kNone});
-    result.push_back({0xFF, 0xC0, Mnemonic::kMovBZ, Format::kMovBzReg, 2,
+    result.push_back({0xFF, 0xC0, Mnemonic::kMovBZ, Format::kWordByteReg, 2,
                       CondSource::kNone});
-    result.push_back({0xFF, 0xD2, Mnemonic::kMovBS, Format::kMovBsMem, 4,
+    result.push_back({0xFF, 0xD2, Mnemonic::kMovBS, Format::kRegMem, 4,
                       CondSource::kNone});
-    result.push_back({0xFF, 0xC2, Mnemonic::kMovBZ, Format::kMovBzMem, 4,
+    result.push_back({0xFF, 0xC2, Mnemonic::kMovBZ, Format::kRegMem, 4,
                       CondSource::kNone});
-    result.push_back({0xFF, 0xD5, Mnemonic::kMovBS, Format::kMovBsMemReg, 4,
+    result.push_back({0xFF, 0xD5, Mnemonic::kMovBS, Format::kByteMemReg, 4,
                       CondSource::kNone});
-    result.push_back({0xFF, 0xC5, Mnemonic::kMovBZ, Format::kMovBzMemReg, 4,
+    result.push_back({0xFF, 0xC5, Mnemonic::kMovBZ, Format::kByteMemReg, 4,
                       CondSource::kNone});
 
     return result;
@@ -545,30 +513,18 @@ Instruction Fetcher::Fetch(CodeAddress pc) {
       return instruction;
 
     case Format::kRegImm16:
-      // 0xF[7:4] | reg — обычный GPR; иначе byte1 — короткий прямой адрес
-      // (address / 2), как в `MOV P3, #data16`.
-      if (high == 0x0F) {
-        instruction.operands.push_back(MakeRegister(low));
-      } else {
-        instruction.operands.push_back(MakeDirect(HalfWordAddress(byte1)));
-      }
+      instruction.operands.push_back(MakeShortRegister(byte1));
       instruction.operands.push_back(MakeImmediate(word));
       return instruction;
 
     case Format::kRegMem:
-      if (high != 0x0F) {
-        Invalid(pc, raw);
-      }
-      instruction.operands.push_back(MakeRegister(low));
+      instruction.operands.push_back(MakeShortRegister(byte1));
       instruction.operands.push_back(MakeDirect(word));
       return instruction;
 
     case Format::kMemReg:
-      if (high != 0x0F) {
-        Invalid(pc, raw);
-      }
       instruction.operands.push_back(MakeDirect(word));
-      instruction.operands.push_back(MakeRegister(low));
+      instruction.operands.push_back(MakeShortRegister(byte1));
       return instruction;
 
     case Format::kRegIndirect:
@@ -645,18 +601,11 @@ Instruction Fetcher::Fetch(CodeAddress pc) {
           MakeIndirect(low, IndirectMemoryOperand::AddressMode::kPlain));
       return instruction;
 
-    case Format::kMemByteIndirectMemIndirect:
+    case Format::kMemIndirectMemIndirectInc:
       instruction.operands.push_back(
           MakeIndirect(high, IndirectMemoryOperand::AddressMode::kPlain));
       instruction.operands.push_back(
-          MakeIndirect(low, IndirectMemoryOperand::AddressMode::kPlain));
-      return instruction;
-
-    case Format::kMemByteIndirectIncMemIndirect:
-      instruction.operands.push_back(
-          MakeIndirect(high, IndirectMemoryOperand::AddressMode::kPostIncrement));
-      instruction.operands.push_back(
-          MakeIndirect(low, IndirectMemoryOperand::AddressMode::kPlain));
+          MakeIndirect(low, IndirectMemoryOperand::AddressMode::kPostIncrement));
       return instruction;
 
     case Format::kShort:
@@ -688,29 +637,19 @@ Instruction Fetcher::Fetch(CodeAddress pc) {
       instruction.operands.push_back(MakeImmediate(high));
       return instruction;
 
-    case Format::kByteRegImm16:
-      if (high == 0x0F) {
-        instruction.operands.push_back(MakeByteRegister(low));
-      } else {
-        instruction.operands.push_back(MakeDirect(HalfWordAddress(byte1)));
-      }
-      instruction.operands.push_back(MakeImmediate(word));
+    case Format::kByteRegImm8:
+      instruction.operands.push_back(MakeShortRegister(byte1, true));
+      instruction.operands.push_back(MakeImmediate(raw[2]));
       return instruction;
 
     case Format::kByteRegMem:
-      if (high != 0x0F) {
-        Invalid(pc, raw);
-      }
-      instruction.operands.push_back(MakeByteRegister(low));
+      instruction.operands.push_back(MakeShortRegister(byte1, true));
       instruction.operands.push_back(MakeDirect(word));
       return instruction;
 
     case Format::kByteMemReg:
-      if (high != 0x0F) {
-        Invalid(pc, raw);
-      }
       instruction.operands.push_back(MakeDirect(word));
-      instruction.operands.push_back(MakeByteRegister(low));
+      instruction.operands.push_back(MakeShortRegister(byte1, true));
       return instruction;
 
     case Format::kByteRegIndirect:
@@ -806,13 +745,7 @@ Instruction Fetcher::Fetch(CodeAddress pc) {
     case Format::kPcall:
     case Format::kRetp:
     case Format::kPushPop:
-      if (high == 0x0F) {
-        instruction.operands.push_back(MakeRegister(low));
-      } else if (const auto special = SpecialRegister(byte1); special.has_value()) {
-        instruction.operands.push_back(std::make_unique<RegisterOperand>(*special));
-      } else {
-        Invalid(pc, raw);
-      }
+      instruction.operands.push_back(MakeShortRegister(byte1));
       if (rule->format == Format::kPcall) {
         instruction.operands.push_back(MakeCodeAddress(word));
       }
@@ -844,12 +777,12 @@ Instruction Fetcher::Fetch(CodeAddress pc) {
     }
 
     case Format::kTrap:
+      if ((byte1 & 1) != 0) Invalid(pc, raw);
       instruction.operands.push_back(MakeImmediate(byte1 >> 1));
       return instruction;
 
     case Format::kProtected:
       if (byte1 != static_cast<Byte>(~opcode) || raw[2] != opcode || raw[3] != opcode) {
-        if (rule->mnemonic != Mnemonic::kEinit) Invalid(pc, raw);
         instruction.protection_fault = true;
       }
       return instruction;
@@ -872,29 +805,28 @@ Instruction Fetcher::Fetch(CodeAddress pc) {
       return instruction;
     }
 
-    case Format::kMovBsReg:
-    case Format::kMovBzReg:
-      // D0/C0: byte_reg[7:4] | word_reg[3:0]
+    case Format::kExtendedAddress: {
+      // C166S V1, pp. 6-40–6-47. High nibble: R, P, range - 1.
+      const bool page = (high & 0x04) != 0;
+      const bool extended_registers = (high & 0x08) != 0;
+      if (extended_registers) {
+        instruction.mnemonic = page ? Mnemonic::kExtpr : Mnemonic::kExtsr;
+      } else {
+        instruction.mnemonic = page ? Mnemonic::kExtp : Mnemonic::kExts;
+      }
+      if (rule->size == 4) {
+        if (low != 0 || word > (page ? 0x3FF : 0xFF)) Invalid(pc, raw);
+        instruction.operands.push_back(MakeImmediate(word));
+      } else {
+        instruction.operands.push_back(MakeRegister(low));
+      }
+      instruction.operands.push_back(MakeImmediate((high & 0x03) + 1));
+      return instruction;
+    }
+
+    case Format::kWordByteReg:
       instruction.operands.push_back(MakeRegister(low));
       instruction.operands.push_back(MakeByteRegister(high));
-      return instruction;
-
-    case Format::kMovBsMem:
-    case Format::kMovBzMem:
-      if (high != 0x0F) {
-        Invalid(pc, raw);
-      }
-      instruction.operands.push_back(MakeRegister(low));
-      instruction.operands.push_back(MakeDirect(word));
-      return instruction;
-
-    case Format::kMovBsMemReg:
-    case Format::kMovBzMemReg:
-      if (high != 0x0F) {
-        Invalid(pc, raw);
-      }
-      instruction.operands.push_back(MakeDirect(word));
-      instruction.operands.push_back(MakeByteRegister(low));
       return instruction;
   }
 
