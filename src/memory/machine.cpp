@@ -24,16 +24,17 @@ constexpr PhysicalAddress kMdc = 0xFF0E;
 constexpr Byte kMdrInUse = 1u << 4;
 constexpr PhysicalAddress kWdt = 0xFEAE;
 constexpr PhysicalAddress kWdtCon = 0xFFAE;
+constexpr PhysicalAddress kSyscon = 0xFF12;
 constexpr Word kWatchdogTimerEnable = 1u << 6;
 
 constexpr SfrMapping kSfrs[] = {
-    {RegisterId::kDPP0, 0xFE00},   {RegisterId::kDPP1, 0xFE02},
-    {RegisterId::kDPP2, 0xFE04},   {RegisterId::kDPP3, 0xFE06},
-    {RegisterId::kMDH, 0xFE0C},    {RegisterId::kMDL, 0xFE0E},
-    {RegisterId::kCP, 0xFE10},     {RegisterId::kSP, sfr::kStackPointerAddress},
-    {RegisterId::kSTKOV, 0xFE14},  {RegisterId::kSTKUN, 0xFE16},
-    {RegisterId::kMDC, 0xFF0E},    {RegisterId::kPSW, 0xFF10},
-    {RegisterId::kSYSCON, 0xFF12}, {RegisterId::kTFR, 0xFFAC},
+    {RegisterId::kDPP0, 0xFE00},    {RegisterId::kDPP1, 0xFE02},
+    {RegisterId::kDPP2, 0xFE04},    {RegisterId::kDPP3, 0xFE06},
+    {RegisterId::kMDH, 0xFE0C},     {RegisterId::kMDL, 0xFE0E},
+    {RegisterId::kCP, 0xFE10},      {RegisterId::kSP, sfr::kStackPointerAddress},
+    {RegisterId::kSTKOV, 0xFE14},   {RegisterId::kSTKUN, 0xFE16},
+    {RegisterId::kMDC, 0xFF0E},     {RegisterId::kPSW, 0xFF10},
+    {RegisterId::kSYSCON, kSyscon}, {RegisterId::kTFR, 0xFFAC},
 };
 
 }  // namespace
@@ -59,7 +60,10 @@ void Machine::Write8(PhysicalAddress address, Byte value) {
 }
 void Machine::StoreByte(PhysicalAddress address, Byte value) {
   const auto word = address & ~1u;
-  if (word == kOnes || word == kZeros || word == kWdt) return;
+  if (word == kOnes || word == kZeros || word == kWdt ||
+      (word == kSyscon && initialization_complete_)) {
+    return;
+  }
   if (word == kMdl || word == kMdh) memory_.Write8(kMdc, memory_.Read8(kMdc) | kMdrInUse);
   // SP[15:12] are fixed at 1111 and SP[0] is fixed at 0 (C166S V1, pp. 3-61–3-62).
   if (address == sfr::kStackPointerAddress) {
@@ -129,6 +133,10 @@ PhysicalAddress Machine::Resolve(LogicalAddress address) {
   Word page = ReadRegister(dpp) & 0x03FF;
   return (static_cast<PhysicalAddress>(page) << 14) | (address & 0x3FFF);
 }
+void Machine::EndInitialization() {
+  initialization_complete_ = true;
+  watchdog_disable_locked_ = true;
+}
 void Machine::DisableWatchdog() {
   if (!watchdog_disable_locked_) watchdog_reset_enabled_ = false;
 }
@@ -146,6 +154,7 @@ void Machine::ReloadWatchdog() {
 }
 void Machine::Reset() {
   Cpu() = {};
+  initialization_complete_ = false;
   watchdog_reset_enabled_ = true;
   watchdog_disable_locked_ = false;
   Write16(kWdtCon, 0x0081);
