@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <span>
+#include <string_view>
 
 #include "interfaces/memory.h"
 #include "interfaces/raw_memory.h"
@@ -27,6 +28,9 @@ class Machine : public IMachine {
   PhysicalAddress Resolve(LogicalAddress address) override;
   void LoadBinary(PhysicalAddress address, std::span<const Byte> bytes);
   void LoadBinaryFile(PhysicalAddress address, const std::filesystem::path& path);
+  // Addresses come from the HEX records. Loading leaves the program counter as it was.
+  void LoadIntelHex(std::string_view text);
+  void LoadIntelHexFile(const std::filesystem::path& path);
 
  private:
   void ReloadWatchdog();

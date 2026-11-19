@@ -8,10 +8,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 enable_testing()
 
-add_library(c166_memory STATIC ../machine.cpp ../raw_memory.cpp)
+add_library(c166_memory STATIC ../machine.cpp ../raw_memory.cpp ../intel_hex.cpp)
 target_include_directories(c166_memory PUBLIC "../..")
 
-foreach(test IN ITEMS raw_memory_access machine_access)
+foreach(test IN ITEMS raw_memory_access machine_access intel_hex)
     add_executable("${test}" "${test}.cc")
     target_link_libraries("${test}" PRIVATE c166_memory)
     add_test(NAME "memory.${test}" COMMAND "${test}")
