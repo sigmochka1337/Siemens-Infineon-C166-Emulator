@@ -69,9 +69,10 @@ enum class Format : std::uint8_t {
   kBitSet,    // bit в opcode[7:4], half-word в byte1
   kBitClear,  // bit в opcode[7:4], half-word в byte1
   kBitRel,    // half-word в byte1, rel8 в byte2, bit в byte3[7:4]
+  kBitField,  // bitoff в byte1, маска и данные в byte2/byte3
 
   kTrap,       // #trap в byte1 (номер * 2)
-  kWatchdog,   // opcode, complement, opcode, opcode
+  kProtected,  // opcode, complement, opcode, opcode
   kReti,       // FB 88
   kExtAtomic,  // D1 <range>: EXTR/ATOMIC #1..#4
 
@@ -275,6 +276,10 @@ const std::vector<Rule>& Rules() {
                       CondSource::kNone});
     result.push_back({0xFF, 0xD1, Mnemonic::kExtr, Format::kExtAtomic, 2,
                       CondSource::kNone});
+    result.push_back({0xFF, 0x0A, Mnemonic::kBfldl, Format::kBitField, 4,
+                      CondSource::kNone});
+    result.push_back({0xFF, 0x1A, Mnemonic::kBfldh, Format::kBitField, 4,
+                      CondSource::kNone});
     result.push_back({0xFF, 0x8A, Mnemonic::kJb, Format::kBitRel, 4,
                       CondSource::kNone});
     result.push_back({0xFF, 0x9A, Mnemonic::kJnb, Format::kBitRel, 4,
@@ -285,9 +290,11 @@ const std::vector<Rule>& Rules() {
                       CondSource::kNone});
     result.push_back({0xFF, 0x9B, Mnemonic::kTrap, Format::kTrap, 2,
                       CondSource::kNone});
-    result.push_back({0xFF, 0xA5, Mnemonic::kDiswdt, Format::kWatchdog, 4,
+    result.push_back({0xFF, 0xB5, Mnemonic::kEinit, Format::kProtected, 4,
                       CondSource::kNone});
-    result.push_back({0xFF, 0xA7, Mnemonic::kSrvwdt, Format::kWatchdog, 4,
+    result.push_back({0xFF, 0xA5, Mnemonic::kDiswdt, Format::kProtected, 4,
+                      CondSource::kNone});
+    result.push_back({0xFF, 0xA7, Mnemonic::kSrvwdt, Format::kProtected, 4,
                       CondSource::kNone});
     result.push_back({0xFF, 0xCC, Mnemonic::kNop, Format::kNone, 2,
                       CondSource::kNone});
@@ -817,6 +824,14 @@ Instruction Fetcher::Fetch(CodeAddress pc) {
           MakeBitOperand(byte1, static_cast<Byte>(opcode >> 4)));
       return instruction;
 
+    case Format::kBitField: {
+      const bool high_byte = rule->mnemonic == Mnemonic::kBfldh;
+      instruction.operands.push_back(std::make_unique<BitWordOperand>(BitWordAddress(byte1)));
+      instruction.operands.push_back(MakeImmediate(raw[high_byte ? 2 : 3]));
+      instruction.operands.push_back(MakeImmediate(raw[high_byte ? 3 : 2]));
+      return instruction;
+    }
+
     case Format::kBitRel: {
       if (LowNibble(raw[3]) != 0) {
         Invalid(pc, raw);
@@ -832,9 +847,10 @@ Instruction Fetcher::Fetch(CodeAddress pc) {
       instruction.operands.push_back(MakeImmediate(byte1 >> 1));
       return instruction;
 
-    case Format::kWatchdog:
+    case Format::kProtected:
       if (byte1 != static_cast<Byte>(~opcode) || raw[2] != opcode || raw[3] != opcode) {
-        Invalid(pc, raw);
+        if (rule->mnemonic != Mnemonic::kEinit) Invalid(pc, raw);
+        instruction.protection_fault = true;
       }
       return instruction;
 

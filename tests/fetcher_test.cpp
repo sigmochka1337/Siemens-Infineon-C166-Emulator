@@ -97,6 +97,9 @@ void TestGoldenVectors() {
       {{0xEB, 0x09}, 2, "retp SP"},
       {{0x9B, 0x02}, 2, "trap #0x0001"},
       {{0xA5, 0x5A, 0xA5, 0xA5}, 4, "diswdt"},
+      {{0xB5, 0x4A, 0xB5, 0xB5}, 4, "einit"},
+      {{0x0A, 0x86, 0x3F, 0x2E}, 4, "bfldl 0xFF0C, #0x002E, #0x003F"},
+      {{0x1A, 0xF6, 0xF0, 0xAB}, 4, "bfldh 0xFFEC, #0x00F0, #0x00AB"},
       {{0xA7, 0x58, 0xA7, 0xA7}, 4, "srvwdt"},
       {{0xD1, 0x80}, 2, "extr #0x0001"},
       {{0xD1, 0x90}, 2, "extr #0x0002"},
@@ -341,6 +344,22 @@ void TestErrors() {
   machine.ClearMemory();
   Put(machine, kBase, {0xA5, 0x5A, 0xA5, 0xA7});
   CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch(CodeAddress{0, kBase}); }));
+
+  // C166S V1, pp. 3-31 and 6-38. The executor raises PRTFLT for a broken EINIT.
+  const std::initializer_list<Byte> broken_einit[] = {
+      {0xB5, 0x00, 0xB5, 0xB5},
+      {0xB5, 0x4A, 0x00, 0xB5},
+      {0xB5, 0x4A, 0xB5, 0x00},
+  };
+  for (auto bytes : broken_einit) {
+    machine.ClearMemory();
+    Put(machine, kBase, bytes);
+    const Instruction instruction = fetcher.Fetch(CodeAddress{0, kBase});
+    CHECK(instruction.mnemonic == Mnemonic::kEinit);
+    CHECK(instruction.size == 4);
+    CHECK(instruction.operands.empty());
+    CHECK(instruction.protection_fault);
+  }
 
   // Инструкция на 4 байта не должна пересекать границу 64-КБ сегмента.
   machine.ClearMemory();
