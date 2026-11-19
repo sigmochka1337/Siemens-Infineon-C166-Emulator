@@ -25,8 +25,10 @@ class Stack {
   bool Retp(const Operand* dst);
   bool Reti();
 
-  void RequestTrap(Word flag);
-  void ServiceTraps();
+  Word CheckOverflow(Word sp);
+  Word CheckUnderflow(Word sp);
+  Word RequestTrap(Word flag);
+  void ServiceTraps(Word deferred_flags = 0);
 
  private:
   bool Push(const RegisterOperand* src);

@@ -255,7 +255,7 @@ void Stack::PushWord(Word value) {
   const auto address = ResolveStackAddress(sp);
   machine_.WriteRegister(RegisterId::kSP, sp);
   machine_.Write16(address, value);
-  if (sp < machine_.ReadRegister(RegisterId::kSTKOV)) RequestTrap(tfr::kStackOverflow);
+  CheckOverflow(sp);
 }
 
 Word Stack::PopWord() {
@@ -263,8 +263,22 @@ Word Stack::PopWord() {
   Word value = machine_.Read16(ResolveStackAddress(sp));
   sp = static_cast<Word>(((sp + 2) & 0x0FFE) | 0xF000);
   machine_.WriteRegister(RegisterId::kSP, sp);
-  if (sp > machine_.ReadRegister(RegisterId::kSTKUN)) RequestTrap(tfr::kStackUnderflow);
+  CheckUnderflow(sp);
   return value;
+}
+
+Word Stack::CheckOverflow(Word sp) {
+  if (sp < machine_.ReadRegister(RegisterId::kSTKOV)) {
+    return RequestTrap(tfr::kStackOverflow);
+  }
+  return 0;
+}
+
+Word Stack::CheckUnderflow(Word sp) {
+  if (sp > machine_.ReadRegister(RegisterId::kSTKUN)) {
+    return RequestTrap(tfr::kStackUnderflow);
+  }
+  return 0;
 }
 
 PhysicalAddress Stack::ResolveStackAddress(Word sp) const {
@@ -296,21 +310,24 @@ PhysicalAddress Stack::ResolveStackAddress(Word sp) const {
   return (0xFBFE & ~mask) | (sp & mask);
 }
 
-void Stack::RequestTrap(Word flag) {
-  machine_.WriteRegister(RegisterId::kTFR, machine_.ReadRegister(RegisterId::kTFR) | flag);
+Word Stack::RequestTrap(Word flag) {
+  const Word pending = machine_.ReadRegister(RegisterId::kTFR);
+  machine_.WriteRegister(RegisterId::kTFR, pending | flag);
+  return flag & ~pending;
 }
 
-void Stack::ServiceTraps() {
+void Stack::ServiceTraps(Word deferred_flags) {
   constexpr Word kClassBVector = 0x0028;
+  constexpr Word kClassBFlags = tfr::kIllegalWordOperand | tfr::kIllegalInstructionAccess;
   // Class A can interrupt class B. Pending TFR flags survive until software clears them.
   if (class_a_frame_sp_) return;
-  const Word flags = machine_.ReadRegister(RegisterId::kTFR);
+  const Word flags = machine_.ReadRegister(RegisterId::kTFR) & ~deferred_flags;
   Word vector;
   if ((flags & tfr::kStackOverflow) != 0) {
     vector = 0x0010;
   } else if ((flags & tfr::kStackUnderflow) != 0) {
     vector = 0x0018;
-  } else if ((flags & tfr::kIllegalWordOperand) != 0 && !class_b_frame_sp_) {
+  } else if ((flags & kClassBFlags) != 0 && !class_b_frame_sp_) {
     vector = kClassBVector;
   } else {
     return;

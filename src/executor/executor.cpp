@@ -20,6 +20,15 @@ class Helper {
 
   Operand* operator[](size_t index) { return instruction_.operands[index].get(); }
 
+  bool HasStackPointerDestination() const {
+    const Operand* destination = instruction_.operands.front().get();
+    if (const auto* reg = dynamic_cast<const RegisterOperand*>(destination)) {
+      return reg->Id() == RegisterId::kSP;
+    }
+    const auto* mem = dynamic_cast<const DirectMemoryOperand*>(destination);
+    return mem && machine_.Resolve(mem->Address()) == sfr::kStackPointerAddress;
+  }
+
   ConditionCode Condition() const {
     if (!instruction_.condition.has_value()) {
       throw InvalidInstruction(instruction_);
@@ -43,15 +52,28 @@ class Helper {
 }  // namespace
 
 void Executor::Execute(const Instruction& instruction) {
+  Word deferred_flags = 0;
   try {
-    ExecuteInstruction(instruction);
+    deferred_flags = ExecuteInstruction(instruction);
   } catch (const IllegalWordOperandAccess&) {
     stack_.RequestTrap(tfr::kIllegalWordOperand);
   }
-  stack_.ServiceTraps();
+
+  CodeAddress next_pc = machine_.GetPC();
+  const bool odd_target = (next_pc.offset & 1u) != 0;
+  if (odd_target) {
+    stack_.RequestTrap(tfr::kIllegalInstructionAccess);
+  }
+  stack_.ServiceTraps(deferred_flags);
+
+  // The trap frame saves the odd target. If entry is blocked, IP stays word-aligned.
+  if (odd_target && machine_.GetPC() == next_pc) {
+    next_pc.offset &= 0xFFFE;
+    machine_.SetPC(next_pc);
+  }
 }
 
-void Executor::ExecuteInstruction(const Instruction& instruction) {
+Word Executor::ExecuteInstruction(const Instruction& instruction) {
   Helper helper(instruction, machine_);
   helper.AdvancePC();
 
@@ -87,8 +109,13 @@ void Executor::ExecuteInstruction(const Instruction& instruction) {
     case Mnemonic::kAdd: {
       helper.ValidateOperandsSize(2);
 
-      if (alu_.Add(helper[0], helper[1])) break;
-      throw InvalidInstruction(instruction);
+      if (!alu_.Add(helper[0], helper[1])) {
+        throw InvalidInstruction(instruction);
+      }
+      if (helper.HasStackPointerDestination()) {
+        return stack_.CheckUnderflow(machine_.ReadRegister(RegisterId::kSP));
+      }
+      break;
     }
 
     case Mnemonic::kAddB: {
@@ -115,8 +142,13 @@ void Executor::ExecuteInstruction(const Instruction& instruction) {
     case Mnemonic::kSub: {
       helper.ValidateOperandsSize(2);
 
-      if (alu_.Sub(helper[0], helper[1])) break;
-      throw InvalidInstruction(instruction);
+      if (!alu_.Sub(helper[0], helper[1])) {
+        throw InvalidInstruction(instruction);
+      }
+      if (helper.HasStackPointerDestination()) {
+        return stack_.CheckOverflow(machine_.ReadRegister(RegisterId::kSP));
+      }
+      break;
     }
 
     case Mnemonic::kSubB: {
@@ -255,5 +287,6 @@ void Executor::ExecuteInstruction(const Instruction& instruction) {
     default:
       throw UnknownInstruction(instruction);
   }
+  return 0;
 }
 }  // namespace c166

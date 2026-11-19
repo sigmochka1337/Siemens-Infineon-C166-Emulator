@@ -16,7 +16,8 @@ class Executor : public IExecutor {
   void Execute(const Instruction& instruction) override;
 
  private:
-  void ExecuteInstruction(const Instruction& instruction);
+  // Returns newly set stack-limit flags whose service is delayed by one instruction.
+  Word ExecuteInstruction(const Instruction& instruction);
 
   IMachine& machine_;
   ALU alu_;
