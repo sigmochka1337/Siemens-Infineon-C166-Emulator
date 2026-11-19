@@ -6,6 +6,7 @@
 #include <utility>
 
 #include "c166s_v1_constants.h"
+#include "exceptions.h"
 #include "executor/executor.h"
 #include "helper.h"
 #include "memory/machine.h"
@@ -24,17 +25,37 @@ inline void Prepare(Machine& machine, Word psw = kInitialPsw, CodeAddress start 
   machine.WriteRegister(RegisterId::kPSW, psw);
 }
 
+inline Instruction MakeTestInstruction(Mnemonic mnemonic, Byte size,
+                                       std::optional<ConditionCode> condition,
+                                       std::unique_ptr<Operand> first,
+                                       std::unique_ptr<Operand> second) {
+  Instruction instruction{mnemonic, condition, {}, size};
+  if (first) instruction.operands.push_back(std::move(first));
+  if (second) instruction.operands.push_back(std::move(second));
+  return instruction;
+}
+
+inline void CheckInvalidInstruction(Checks& checks, Executor& executor, Mnemonic mnemonic,
+                                    Byte size, std::unique_ptr<Operand> first,
+                                    std::unique_ptr<Operand> second = {}) {
+  const auto instruction =
+      MakeTestInstruction(mnemonic, size, std::nullopt, std::move(first), std::move(second));
+  try {
+    executor.Execute(instruction);
+    checks.Fail("expected InvalidInstruction");
+  } catch (const InvalidInstruction&) {
+    // The decoded operands do not match an encoding.
+  } catch (const std::exception& error) {
+    checks.Fail(error.what());
+  }
+}
+
 inline void ExecuteInstruction(Checks& checks, Executor& executor, Mnemonic mnemonic, Byte size,
                                std::optional<ConditionCode> condition = std::nullopt,
                                std::unique_ptr<Operand> first = {},
                                std::unique_ptr<Operand> second = {}) {
-  Instruction instruction{mnemonic, condition, {}, size};
-  if (first) {
-    instruction.operands.push_back(std::move(first));
-  }
-  if (second) {
-    instruction.operands.push_back(std::move(second));
-  }
+  const auto instruction =
+      MakeTestInstruction(mnemonic, size, condition, std::move(first), std::move(second));
   try {
     executor.Execute(instruction);
   } catch (const std::exception& error) {

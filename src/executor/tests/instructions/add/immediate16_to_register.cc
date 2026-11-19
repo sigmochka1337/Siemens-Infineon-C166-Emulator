@@ -72,6 +72,22 @@ void TestImmediate16ToRegister(Checks& checks) {
     }
     CheckHardwareTrap(checks, machine, kStackUnderflowVector, kStackUnderflow);
   }
+  {
+    checks.BeginCase("ADD SP in the legacy short SFR representation checks STKUN");
+    RawMemory raw;
+    Machine machine(raw);
+    Executor executor(machine);
+    Prepare(machine);
+    machine.WriteRegister(kSP, 0xFB20);
+    machine.WriteRegister(kSTKUN, 0xFB20);
+    machine.WriteRegister(kDPP3, 0);
+    ExecuteInstruction(checks, executor, Mnemonic::kAdd, 4, std::nullopt,
+                       std::make_unique<DirectMemoryOperand>(0xFE12),
+                       std::make_unique<ImmediateOperand>(2));
+    checks.Equal("SP", machine.ReadRegister(kSP), 0xFB22);
+    ExecuteInstruction(checks, executor, Mnemonic::kNop, 2);
+    CheckHardwareTrap(checks, machine, kStackUnderflowVector, kStackUnderflow);
+  }
 }
 
 }  // namespace c166::test::add

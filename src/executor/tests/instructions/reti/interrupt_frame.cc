@@ -92,6 +92,43 @@ void TestInterruptFrame(Checks& checks) {
 
     CheckIllegalTarget(checks, machine, raw, kOddTarget);
   }
+
+  {
+    checks.BeginCase("RETI releases a hardware trap after software moves the stack frame");
+    RawMemory raw;
+    Machine machine(raw);
+    Executor executor(machine);
+    Prepare(machine);
+    machine.WriteRegister(kTFR, kIllegalWord);
+    ExecuteInstruction(checks, executor, Mnemonic::kNop, 2);
+    CheckHardwareTrap(checks, machine, kClassBVector, kIllegalWord);
+    machine.WriteRegister(kTFR, 0);
+    for (Word i = 0; i < 6; i += 2) {
+      machine.Write16(0xFB80 + i, machine.Read16(kResetStackPointer - 6 + i));
+    }
+    machine.WriteRegister(kSP, 0xFB80);
+    ExecuteInstruction(checks, executor, Mnemonic::kReti, 2);
+    CheckCompleted(checks, machine, 2, kInitialPsw);
+    machine.WriteRegister(kTFR, kIllegalWord);
+    ExecuteInstruction(checks, executor, Mnemonic::kNop, 2);
+    CheckHardwareTrap(checks, machine, kClassBVector, kIllegalWord);
+    checks.Equal("new frame", machine.ReadRegister(kSP), 0xFB80);
+  }
+
+  {
+    checks.BeginCase("Reset releases an active hardware trap for an existing executor");
+    RawMemory raw;
+    Machine machine(raw);
+    Executor executor(machine);
+    for (int reset = 0; reset < 2; ++reset) {
+      machine.Reset();
+      Prepare(machine);
+      ExecuteInstruction(checks, executor, Mnemonic::kMov, 4, std::nullopt,
+                         std::make_unique<RegisterOperand>(kR6),
+                         std::make_unique<DirectMemoryOperand>(0x6001));
+      CheckTrap(checks, machine, raw, 4, kIllegalWord);
+    }
+  }
 }
 
 }  // namespace c166::test::reti

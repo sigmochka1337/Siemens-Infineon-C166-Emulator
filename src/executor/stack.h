@@ -1,7 +1,5 @@
 #pragma once
 
-#include <optional>
-
 #include "interfaces/memory.h"
 #include "operands.h"
 #include "types.h"
@@ -28,6 +26,7 @@ class Stack {
   Word CheckOverflow(Word sp);
   Word CheckUnderflow(Word sp);
   Word RequestTrap(Word flag);
+  void EnterTrap(Word vector, TrapClass kind);
   void ServiceTraps(Word deferred_flags = 0);
 
  private:
@@ -54,12 +53,8 @@ class Stack {
     return id >= RegisterId::kR0 && id <= RegisterId::kR15;
   }
 
-  constexpr bool IsWordRegister(RegisterId id) noexcept {
-    return IsWordGpr(id) || (id >= RegisterId::kSP && id <= RegisterId::kTFR);
-  }
+  constexpr bool IsWordRegister(RegisterId id) noexcept { return IsWordGpr(id) || IsShortSfr(id); }
 
   IMachine& machine_;
-  std::optional<Word> class_a_frame_sp_;
-  std::optional<Word> class_b_frame_sp_;
 };
 }  // namespace c166

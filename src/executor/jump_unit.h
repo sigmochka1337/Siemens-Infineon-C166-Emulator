@@ -13,6 +13,7 @@ class JumpUnit {
   bool Jmpi(ConditionCode condition, const Operand* address);
   bool Jmpr(ConditionCode condition, const Operand* displacement);
   bool Jmps(const Operand* address);
+  bool BranchOnBit(Mnemonic operation, const Operand* bit, const Operand* displacement);
 
  private:
   bool Jmpa(ConditionCode condition, const CodeAddressOperand* address);

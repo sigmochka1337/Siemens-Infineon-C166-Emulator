@@ -55,17 +55,13 @@ class MoveUnit {
     return id >= RegisterId::kR0 && id <= RegisterId::kR15;
   }
 
-  constexpr bool IsWordRegister(RegisterId id) noexcept {
-    return IsWordGpr(id) || (id >= RegisterId::kSP && id <= RegisterId::kTFR);
-  }
+  constexpr bool IsWordRegister(RegisterId id) noexcept { return IsWordGpr(id) || IsShortSfr(id); }
 
   constexpr bool IsByteGpr(RegisterId id) noexcept {
     return id >= RegisterId::kRL0 && id <= RegisterId::kRH7;
   }
 
-  constexpr bool IsByteRegister(RegisterId id) noexcept {
-    return IsByteGpr(id) || (id >= RegisterId::kSP && id <= RegisterId::kTFR);
-  }
+  constexpr bool IsByteRegister(RegisterId id) noexcept { return IsByteGpr(id) || IsShortSfr(id); }
 
   void WriteByteRegister(RegisterId id, Byte value);
 

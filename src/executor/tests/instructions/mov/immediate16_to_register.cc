@@ -74,6 +74,18 @@ void TestImmediate16ToRegister(Checks& checks) {
     checks.Equal("SP", machine.ReadRegister(kSP), 0xFAC0);
     CheckCompleted(checks, machine, 4, kPreservedPsw);
   }
+  {
+    checks.BeginCase("MOV SP in the legacy short SFR representation bypasses DPP3");
+    RawMemory raw;
+    Machine machine(raw);
+    Executor executor(machine);
+    Prepare(machine);
+    machine.WriteRegister(kDPP3, 0);
+    ExecuteMov(executor, 4, std::make_unique<DirectMemoryOperand>(0xFE12),
+               std::make_unique<ImmediateOperand>(0xFB00));
+    checks.Equal("SP", machine.ReadRegister(kSP), 0xFB00);
+    checks.Equal("paged address", machine.Read16(0x3E12), 0);
+  }
 }
 
 }  // namespace c166::test::mov

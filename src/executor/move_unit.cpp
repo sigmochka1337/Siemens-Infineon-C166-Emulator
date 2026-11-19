@@ -117,7 +117,7 @@ bool MoveUnit::Mov(const RegisterOperand* dst, const ImmediateOperand* src) {
   if (!IsWordRegister(dst->Id())) return false;
 
   Word value = Mov(src->Value());
-  machine_.WriteRegister(dst->Id(), value);
+  machine_.WriteShortRegister(dst->Id(), value);
   return true;
 }
 
@@ -125,8 +125,8 @@ bool MoveUnit::Mov(const RegisterOperand* dst, const RegisterOperand* src) {
   if (!dst || !src) return false;
   if (!IsWordGpr(dst->Id()) || !IsWordGpr(src->Id())) return false;
 
-  Word value = Mov(machine_.ReadRegister(src->Id()));
-  machine_.WriteRegister(dst->Id(), value);
+  Word value = Mov(machine_.ReadShortRegister(src->Id()));
+  machine_.WriteShortRegister(dst->Id(), value);
   return true;
 }
 
@@ -139,17 +139,17 @@ bool MoveUnit::Mov(const RegisterOperand* dst, const IndirectMemoryOperand* src)
     return false;
   }
 
-  Word pointer = machine_.ReadRegister(src->Id());
+  Word pointer = machine_.ReadShortRegister(src->Id());
   LogicalAddress address = pointer;
   if (src->Mode() == Mode::kDisplacement) {
     address = static_cast<LogicalAddress>(pointer + src->Displacement());
   }
-  Word value = Mov(machine_.Read16(machine_.Resolve(address)));
+  Word value = Mov(machine_.Read16(machine_.ResolveOperand(address)));
   if (src->Mode() == Mode::kPostIncrement) {
-    machine_.WriteRegister(src->Id(), static_cast<Word>(pointer + 2));
+    machine_.WriteShortRegister(src->Id(), static_cast<Word>(pointer + 2));
   }
   // Explicit GPR writes follow pointer updates (Subsystem manual, p. 3-80).
-  machine_.WriteRegister(dst->Id(), value);
+  machine_.WriteShortRegister(dst->Id(), value);
   return true;
 }
 
@@ -163,15 +163,15 @@ bool MoveUnit::Mov(const IndirectMemoryOperand* dst, const RegisterOperand* src)
   }
 
   // Capture the source before changing an address register that may be the same GPR.
-  Word value = machine_.ReadRegister(src->Id());
-  LogicalAddress address = machine_.ReadRegister(dst->Id());
+  Word value = machine_.ReadShortRegister(src->Id());
+  LogicalAddress address = machine_.ReadShortRegister(dst->Id());
   if (dst->Mode() == Mode::kPreDecrement) {
     address = static_cast<LogicalAddress>(address - 2);
-    machine_.WriteRegister(dst->Id(), address);
+    machine_.WriteShortRegister(dst->Id(), address);
   } else if (dst->Mode() == Mode::kDisplacement) {
     address = static_cast<LogicalAddress>(address + dst->Displacement());
   }
-  const auto physical_address = machine_.Resolve(address);
+  const auto physical_address = machine_.ResolveOperand(address);
   value = Mov(value);
   machine_.Write16(physical_address, value);
   return true;
@@ -188,16 +188,16 @@ bool MoveUnit::Mov(const IndirectMemoryOperand* dst, const IndirectMemoryOperand
     return false;
   }
 
-  Word dst_pointer = machine_.ReadRegister(dst->Id());
-  Word src_pointer = machine_.ReadRegister(src->Id());
-  const auto dst_address = machine_.Resolve(dst_pointer);
-  const auto src_address = machine_.Resolve(src_pointer);
+  Word dst_pointer = machine_.ReadShortRegister(dst->Id());
+  Word src_pointer = machine_.ReadShortRegister(src->Id());
+  const auto dst_address = machine_.ResolveOperand(dst_pointer);
+  const auto src_address = machine_.ResolveOperand(src_pointer);
   Word value = Mov(machine_.Read16(src_address));
   if (dst->Mode() == Mode::kPostIncrement) {
-    machine_.WriteRegister(dst->Id(), static_cast<Word>(dst_pointer + 2));
+    machine_.WriteShortRegister(dst->Id(), static_cast<Word>(dst_pointer + 2));
   }
   if (src->Mode() == Mode::kPostIncrement) {
-    machine_.WriteRegister(src->Id(), static_cast<Word>(src_pointer + 2));
+    machine_.WriteShortRegister(src->Id(), static_cast<Word>(src_pointer + 2));
   }
   machine_.Write16(dst_address, value);
   return true;
@@ -208,8 +208,8 @@ bool MoveUnit::Mov(const IndirectMemoryOperand* dst, const DirectMemoryOperand* 
   if (!IsWordGpr(dst->Id())) return false;
   if (dst->Mode() != IndirectMemoryOperand::AddressMode::kPlain) return false;
 
-  const auto dst_address = machine_.Resolve(machine_.ReadRegister(dst->Id()));
-  const auto src_address = machine_.Resolve(src->Address());
+  const auto dst_address = machine_.ResolveOperand(machine_.ReadShortRegister(dst->Id()));
+  const auto src_address = machine_.ResolveOperand(src->Address());
   Word value = Mov(machine_.Read16(src_address));
   machine_.Write16(dst_address, value);
   return true;
@@ -220,8 +220,8 @@ bool MoveUnit::Mov(const DirectMemoryOperand* dst, const IndirectMemoryOperand* 
   if (!IsWordGpr(src->Id())) return false;
   if (src->Mode() != IndirectMemoryOperand::AddressMode::kPlain) return false;
 
-  const auto dst_address = machine_.Resolve(dst->Address());
-  const auto src_address = machine_.Resolve(machine_.ReadRegister(src->Id()));
+  const auto dst_address = machine_.ResolveOperand(dst->Address());
+  const auto src_address = machine_.ResolveOperand(machine_.ReadShortRegister(src->Id()));
   Word value = Mov(machine_.Read16(src_address));
   machine_.Write16(dst_address, value);
   return true;
@@ -231,8 +231,8 @@ bool MoveUnit::Mov(const RegisterOperand* dst, const DirectMemoryOperand* src) {
   if (!dst || !src) return false;
   if (!IsWordRegister(dst->Id())) return false;
 
-  Word value = Mov(machine_.Read16(machine_.Resolve(src->Address())));
-  machine_.WriteRegister(dst->Id(), value);
+  Word value = Mov(machine_.Read16(machine_.ResolveOperand(src->Address())));
+  machine_.WriteShortRegister(dst->Id(), value);
   return true;
 }
 
@@ -240,8 +240,8 @@ bool MoveUnit::Mov(const DirectMemoryOperand* dst, const RegisterOperand* src) {
   if (!dst || !src) return false;
   if (!IsWordRegister(src->Id())) return false;
 
-  const auto dst_address = machine_.Resolve(dst->Address());
-  Word value = Mov(machine_.ReadRegister(src->Id()));
+  const auto dst_address = machine_.ResolveOperand(dst->Address());
+  Word value = Mov(machine_.ReadShortRegister(src->Id()));
   machine_.Write16(dst_address, value);
   return true;
 }
@@ -268,7 +268,7 @@ bool MoveUnit::Movb(const RegisterOperand* dst, const RegisterOperand* src) {
   if (!dst || !src) return false;
   if (!IsByteGpr(dst->Id()) || !IsByteGpr(src->Id())) return false;
 
-  Byte value = Movb(static_cast<Byte>(machine_.ReadRegister(src->Id())));
+  Byte value = Movb(static_cast<Byte>(machine_.ReadShortRegister(src->Id())));
   WriteByteRegister(dst->Id(), value);
   return true;
 }
@@ -282,14 +282,14 @@ bool MoveUnit::Movb(const RegisterOperand* dst, const IndirectMemoryOperand* src
     return false;
   }
 
-  Word pointer = machine_.ReadRegister(src->Id());
+  Word pointer = machine_.ReadShortRegister(src->Id());
   LogicalAddress address = pointer;
   if (src->Mode() == Mode::kDisplacement) {
     address = static_cast<LogicalAddress>(pointer + src->Displacement());
   }
-  Byte value = Movb(machine_.Read8(machine_.Resolve(address)));
+  Byte value = Movb(machine_.Read8(machine_.ResolveOperand(address)));
   if (src->Mode() == Mode::kPostIncrement) {
-    machine_.WriteRegister(src->Id(), static_cast<Word>(pointer + 1));
+    machine_.WriteShortRegister(src->Id(), static_cast<Word>(pointer + 1));
   }
   // Write last when the byte destination overlaps the address register.
   WriteByteRegister(dst->Id(), value);
@@ -305,15 +305,15 @@ bool MoveUnit::Movb(const IndirectMemoryOperand* dst, const RegisterOperand* src
     return false;
   }
 
-  Byte value = static_cast<Byte>(machine_.ReadRegister(src->Id()));
-  LogicalAddress address = machine_.ReadRegister(dst->Id());
+  Byte value = static_cast<Byte>(machine_.ReadShortRegister(src->Id()));
+  LogicalAddress address = machine_.ReadShortRegister(dst->Id());
   if (dst->Mode() == Mode::kPreDecrement) {
     address = static_cast<LogicalAddress>(address - 1);
-    machine_.WriteRegister(dst->Id(), address);
+    machine_.WriteShortRegister(dst->Id(), address);
   } else if (dst->Mode() == Mode::kDisplacement) {
     address = static_cast<LogicalAddress>(address + dst->Displacement());
   }
-  const auto physical_address = machine_.Resolve(address);
+  const auto physical_address = machine_.ResolveOperand(address);
   value = Movb(value);
   machine_.Write8(physical_address, value);
   return true;
@@ -329,16 +329,16 @@ bool MoveUnit::Movb(const IndirectMemoryOperand* dst, const IndirectMemoryOperan
     return false;
   }
 
-  Word dst_pointer = machine_.ReadRegister(dst->Id());
-  Word src_pointer = machine_.ReadRegister(src->Id());
-  const auto dst_address = machine_.Resolve(dst_pointer);
-  const auto src_address = machine_.Resolve(src_pointer);
+  Word dst_pointer = machine_.ReadShortRegister(dst->Id());
+  Word src_pointer = machine_.ReadShortRegister(src->Id());
+  const auto dst_address = machine_.ResolveOperand(dst_pointer);
+  const auto src_address = machine_.ResolveOperand(src_pointer);
   Byte value = Movb(machine_.Read8(src_address));
   if (dst->Mode() == Mode::kPostIncrement) {
-    machine_.WriteRegister(dst->Id(), static_cast<Word>(dst_pointer + 1));
+    machine_.WriteShortRegister(dst->Id(), static_cast<Word>(dst_pointer + 1));
   }
   if (src->Mode() == Mode::kPostIncrement) {
-    machine_.WriteRegister(src->Id(), static_cast<Word>(src_pointer + 1));
+    machine_.WriteShortRegister(src->Id(), static_cast<Word>(src_pointer + 1));
   }
   machine_.Write8(dst_address, value);
   return true;
@@ -349,8 +349,8 @@ bool MoveUnit::Movb(const IndirectMemoryOperand* dst, const DirectMemoryOperand*
   if (!IsWordGpr(dst->Id())) return false;
   if (dst->Mode() != IndirectMemoryOperand::AddressMode::kPlain) return false;
 
-  const auto dst_address = machine_.Resolve(machine_.ReadRegister(dst->Id()));
-  const auto src_address = machine_.Resolve(src->Address());
+  const auto dst_address = machine_.ResolveOperand(machine_.ReadShortRegister(dst->Id()));
+  const auto src_address = machine_.ResolveOperand(src->Address());
   Byte value = Movb(machine_.Read8(src_address));
   machine_.Write8(dst_address, value);
   return true;
@@ -361,8 +361,8 @@ bool MoveUnit::Movb(const DirectMemoryOperand* dst, const IndirectMemoryOperand*
   if (!IsWordGpr(src->Id())) return false;
   if (src->Mode() != IndirectMemoryOperand::AddressMode::kPlain) return false;
 
-  const auto dst_address = machine_.Resolve(dst->Address());
-  const auto src_address = machine_.Resolve(machine_.ReadRegister(src->Id()));
+  const auto dst_address = machine_.ResolveOperand(dst->Address());
+  const auto src_address = machine_.ResolveOperand(machine_.ReadShortRegister(src->Id()));
   Byte value = Movb(machine_.Read8(src_address));
   machine_.Write8(dst_address, value);
   return true;
@@ -372,7 +372,7 @@ bool MoveUnit::Movb(const RegisterOperand* dst, const DirectMemoryOperand* src) 
   if (!dst || !src) return false;
   if (!IsByteRegister(dst->Id())) return false;
 
-  Byte value = Movb(machine_.Read8(machine_.Resolve(src->Address())));
+  Byte value = Movb(machine_.Read8(machine_.ResolveOperand(src->Address())));
   WriteByteRegister(dst->Id(), value);
   return true;
 }
@@ -381,8 +381,8 @@ bool MoveUnit::Movb(const DirectMemoryOperand* dst, const RegisterOperand* src) 
   if (!dst || !src) return false;
   if (!IsByteRegister(src->Id())) return false;
 
-  const auto dst_address = machine_.Resolve(dst->Address());
-  Byte value = Movb(static_cast<Byte>(machine_.ReadRegister(src->Id())));
+  const auto dst_address = machine_.ResolveOperand(dst->Address());
+  Byte value = Movb(static_cast<Byte>(machine_.ReadShortRegister(src->Id())));
   machine_.Write8(dst_address, value);
   return true;
 }
@@ -400,8 +400,8 @@ bool MoveUnit::Movbs(const RegisterOperand* dst, const RegisterOperand* src) {
   if (!dst || !src) return false;
   if (!IsWordGpr(dst->Id()) || !IsByteGpr(src->Id())) return false;
 
-  Word value = Movbs(static_cast<Byte>(machine_.ReadRegister(src->Id())));
-  machine_.WriteRegister(dst->Id(), value);
+  Word value = Movbs(static_cast<Byte>(machine_.ReadShortRegister(src->Id())));
+  machine_.WriteShortRegister(dst->Id(), value);
   return true;
 }
 
@@ -409,8 +409,8 @@ bool MoveUnit::Movbs(const RegisterOperand* dst, const DirectMemoryOperand* src)
   if (!dst || !src) return false;
   if (!IsWordRegister(dst->Id())) return false;
 
-  Word value = Movbs(machine_.Read8(machine_.Resolve(src->Address())));
-  machine_.WriteRegister(dst->Id(), value);
+  Word value = Movbs(machine_.Read8(machine_.ResolveOperand(src->Address())));
+  machine_.WriteShortRegister(dst->Id(), value);
   return true;
 }
 
@@ -418,8 +418,8 @@ bool MoveUnit::Movbs(const DirectMemoryOperand* dst, const RegisterOperand* src)
   if (!dst || !src) return false;
   if (!IsByteRegister(src->Id())) return false;
 
-  const auto dst_address = machine_.Resolve(dst->Address());
-  Word value = Movbs(static_cast<Byte>(machine_.ReadRegister(src->Id())));
+  const auto dst_address = machine_.ResolveOperand(dst->Address());
+  Word value = Movbs(static_cast<Byte>(machine_.ReadShortRegister(src->Id())));
   machine_.Write16(dst_address, value);
   return true;
 }
@@ -432,8 +432,8 @@ bool MoveUnit::Movbz(const RegisterOperand* dst, const RegisterOperand* src) {
   if (!dst || !src) return false;
   if (!IsWordGpr(dst->Id()) || !IsByteGpr(src->Id())) return false;
 
-  Word value = Movbz(static_cast<Byte>(machine_.ReadRegister(src->Id())));
-  machine_.WriteRegister(dst->Id(), value);
+  Word value = Movbz(static_cast<Byte>(machine_.ReadShortRegister(src->Id())));
+  machine_.WriteShortRegister(dst->Id(), value);
   return true;
 }
 
@@ -441,8 +441,8 @@ bool MoveUnit::Movbz(const RegisterOperand* dst, const DirectMemoryOperand* src)
   if (!dst || !src) return false;
   if (!IsWordRegister(dst->Id())) return false;
 
-  Word value = Movbz(machine_.Read8(machine_.Resolve(src->Address())));
-  machine_.WriteRegister(dst->Id(), value);
+  Word value = Movbz(machine_.Read8(machine_.ResolveOperand(src->Address())));
+  machine_.WriteShortRegister(dst->Id(), value);
   return true;
 }
 
@@ -450,8 +450,8 @@ bool MoveUnit::Movbz(const DirectMemoryOperand* dst, const RegisterOperand* src)
   if (!dst || !src) return false;
   if (!IsByteRegister(src->Id())) return false;
 
-  const auto dst_address = machine_.Resolve(dst->Address());
-  Word value = Movbz(static_cast<Byte>(machine_.ReadRegister(src->Id())));
+  const auto dst_address = machine_.ResolveOperand(dst->Address());
+  Word value = Movbz(static_cast<Byte>(machine_.ReadShortRegister(src->Id())));
   machine_.Write16(dst_address, value);
   return true;
 }
@@ -460,7 +460,7 @@ Word MoveUnit::Movbz(Byte value) { return Mov(static_cast<Word>(value)); }
 
 void MoveUnit::WriteByteRegister(RegisterId id, Byte value) {
   // SFR byte writes clear the other byte (Subsystem manual, pp. 3-5/3-6).
-  machine_.WriteRegister(id, value);
+  machine_.WriteShortRegister(id, value);
 }
 
 }  // namespace c166

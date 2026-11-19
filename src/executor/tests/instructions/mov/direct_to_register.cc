@@ -79,6 +79,25 @@ void TestDirectToRegister(Checks& checks) {
     checks.Equal("R0", machine.ReadRegister(kR0), 0x5678);
     CheckCompleted(checks, machine, 4, kPreservedPsw);
   }
+
+  {
+    checks.BeginCase("The instruction after a DPP write still uses the old page");
+    RawMemory raw;
+    Machine machine(raw);
+    Executor executor(machine);
+    Prepare(machine);
+    machine.Write16(0x4000, 0x1111);
+    machine.Write16(0x14000, 0x5555);
+    ExecuteMov(executor, 4, std::make_unique<RegisterOperand>(kDPP1),
+               std::make_unique<ImmediateOperand>(5));
+    ExecuteMov(executor, 4, std::make_unique<RegisterOperand>(kR7),
+               std::make_unique<DirectMemoryOperand>(0x4000));
+    checks.Equal("first load", machine.ReadRegister(kR7), 0x1111);
+    ExecuteMov(executor, 4, std::make_unique<RegisterOperand>(kR7),
+               std::make_unique<DirectMemoryOperand>(0x4000));
+    checks.Equal("second load", machine.ReadRegister(kR7), 0x5555);
+    CheckCompleted(checks, machine, 12, kPreservedPsw);
+  }
 }
 
 }  // namespace c166::test::mov

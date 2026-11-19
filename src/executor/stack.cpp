@@ -1,5 +1,6 @@
 #include "executor/stack.h"
 
+#include <algorithm>
 #include <cstdint>
 #include <stdexcept>
 
@@ -61,7 +62,7 @@ bool Stack::Push(const RegisterOperand* src) {
   if (!src || !IsWordRegister(src->Id())) return false;
 
   // Capture the value before changing SP in case PUSH SP is executed.
-  Word value = machine_.ReadRegister(src->Id());
+  Word value = machine_.ReadShortRegister(src->Id());
   PushWord(value);
   SetDataFlags(value);
   return true;
@@ -78,7 +79,7 @@ bool Stack::Pop(const RegisterOperand* dst) {
   Word value = PopWord();
   SetDataFlags(value);
   // Write last so POP SP and POP PSW follow the documented operand-write order.
-  machine_.WriteRegister(dst->Id(), value);
+  machine_.WriteShortRegister(dst->Id(), value);
   return true;
 }
 
@@ -172,7 +173,7 @@ bool Stack::Pcall(const Operand* src, const Operand* address) {
 bool Stack::Pcall(const RegisterOperand* src, const CodeAddressOperand* address) {
   if (!src || !address || !IsWordRegister(src->Id())) return false;
 
-  Word value = machine_.ReadRegister(src->Id());
+  Word value = machine_.ReadShortRegister(src->Id());
   CodeAddress pc = machine_.GetPC();
   PushWord(value);
   PushWord(pc.offset);
@@ -219,7 +220,7 @@ bool Stack::Retp(const RegisterOperand* dst) {
   Word value = PopWord();
   machine_.SetPC(pc);
   SetDataFlags(value);
-  machine_.WriteRegister(dst->Id(), value);
+  machine_.WriteShortRegister(dst->Id(), value);
   return true;
 }
 
@@ -227,7 +228,6 @@ bool Stack::Retp(const RegisterOperand* dst) {
 // ------- RETI -------
 // --------------------
 bool Stack::Reti() {
-  const Word sp = machine_.ReadRegister(RegisterId::kSP);
   CodeAddress pc = machine_.GetPC();
   pc.offset = PopWord();
   if ((machine_.ReadRegister(RegisterId::kSYSCON) & syscon::kSegmentationDisabled) == 0) {
@@ -238,11 +238,8 @@ bool Stack::Reti() {
   Word psw_value = PopWord();
   machine_.SetPC(pc);
   machine_.WriteRegister(RegisterId::kPSW, psw_value);
-  if (class_a_frame_sp_ == sp) {
-    class_a_frame_sp_.reset();
-  } else if (!class_a_frame_sp_ && class_b_frame_sp_ == sp) {
-    class_b_frame_sp_.reset();
-  }
+  auto& frames = machine_.Cpu().trap_frames;
+  if (!frames.empty()) frames.pop_back();
   return true;
 }
 
@@ -317,22 +314,25 @@ Word Stack::RequestTrap(Word flag) {
 }
 
 void Stack::ServiceTraps(Word deferred_flags) {
-  constexpr Word kClassBVector = 0x0028;
-  constexpr Word kClassBFlags = tfr::kIllegalWordOperand | tfr::kIllegalInstructionAccess;
-  // Class A can interrupt class B. Pending TFR flags survive until software clears them.
-  if (class_a_frame_sp_) return;
+  auto& cpu = machine_.Cpu();
   const Word flags = machine_.ReadRegister(RegisterId::kTFR) & ~deferred_flags;
-  Word vector;
-  if ((flags & tfr::kStackOverflow) != 0) {
-    vector = 0x0010;
-  } else if ((flags & tfr::kStackUnderflow) != 0) {
-    vector = 0x0018;
-  } else if ((flags & kClassBFlags) != 0 && !class_b_frame_sp_) {
-    vector = kClassBVector;
-  } else {
-    return;
-  }
+  const bool class_b = (flags & tfr::kClassB) != 0 &&
+                       std::ranges::find(cpu.trap_frames, TrapClass::kB) == cpu.trap_frames.end();
+  if (std::ranges::find(cpu.trap_frames, TrapClass::kA) != cpu.trap_frames.end()) return;
+  if (class_b) cpu.sequence = {};
+  if (cpu.sequence.remaining != 0) return;
 
+  if (flags & tfr::kNmi)
+    EnterTrap(0x0008, TrapClass::kA);
+  else if (flags & tfr::kStackOverflow)
+    EnterTrap(0x0010, TrapClass::kA);
+  else if (flags & tfr::kStackUnderflow)
+    EnterTrap(0x0018, TrapClass::kA);
+  else if (class_b)
+    EnterTrap(0x0028, TrapClass::kB);
+}
+
+void Stack::EnterTrap(Word vector, TrapClass kind) {
   const Word saved_psw = machine_.ReadRegister(RegisterId::kPSW);
   const CodeAddress return_address = machine_.GetPC();
   const bool segmented =
@@ -340,9 +340,9 @@ void Stack::ServiceTraps(Word deferred_flags) {
   PushWord(saved_psw);
   if (segmented) PushWord(return_address.segment);
   PushWord(return_address.offset);
-  auto& frame_sp = vector == kClassBVector ? class_b_frame_sp_ : class_a_frame_sp_;
-  frame_sp = machine_.ReadRegister(RegisterId::kSP);
-  machine_.WriteRegister(RegisterId::kPSW, saved_psw | psw::kPriorityMask);
+  machine_.Cpu().trap_frames.push_back(kind);
+  if (kind != TrapClass::kSoftware)
+    machine_.WriteRegister(RegisterId::kPSW, saved_psw | psw::kPriorityMask);
   machine_.SetPC({0, vector});
 }
 

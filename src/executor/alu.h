@@ -19,6 +19,10 @@ class ALU {
   bool Subcb(const Operand* dst, const Operand* src);
 
   bool Neg(const Operand* dst);
+  bool Negb(const Operand* dst);
+  bool Compare(bool byte, Byte size, const Operand* dst, const Operand* src);
+  bool Multiply(bool signed_product, const Operand* first, const Operand* second);
+  bool Divide(Mnemonic op, const Operand* divisor);
 
  private:
   Word Add(Word left, Word right);
@@ -88,17 +92,13 @@ class ALU {
     return id >= RegisterId::kR0 && id <= RegisterId::kR15;
   }
 
-  constexpr bool IsWordRegister(RegisterId id) noexcept {
-    return IsWordGpr(id) || (id >= RegisterId::kSP && id <= RegisterId::kTFR);
-  }
+  constexpr bool IsWordRegister(RegisterId id) noexcept { return IsWordGpr(id) || IsShortSfr(id); }
 
   constexpr bool IsByteGpr(RegisterId id) noexcept {
     return id >= RegisterId::kRL0 && id <= RegisterId::kRH7;
   }
 
-  constexpr bool IsByteRegister(RegisterId id) noexcept {
-    return IsByteGpr(id) || (id >= RegisterId::kSP && id <= RegisterId::kTFR);
-  }
+  constexpr bool IsByteRegister(RegisterId id) noexcept { return IsByteGpr(id) || IsShortSfr(id); }
 
   IMachine& machine_;
 };
