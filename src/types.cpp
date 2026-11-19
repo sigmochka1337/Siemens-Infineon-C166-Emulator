@@ -114,12 +114,18 @@ std::string MnemonicToString(Mnemonic mnemonic) {
       return "bset";
     case Mnemonic::kBClr:
       return "bclr";
+    case Mnemonic::kBfldl:
+      return "bfldl";
+    case Mnemonic::kBfldh:
+      return "bfldh";
     case Mnemonic::kTrap:
       return "trap";
     case Mnemonic::kSrvwdt:
       return "srvwdt";
     case Mnemonic::kDiswdt:
       return "diswdt";
+    case Mnemonic::kEinit:
+      return "einit";
     case Mnemonic::kExts:
       return "exts";
     case Mnemonic::kExtp:

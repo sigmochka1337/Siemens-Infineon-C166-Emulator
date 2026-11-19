@@ -126,6 +126,17 @@ class SegmentedAddressOperand : public Operand {
   Word offset_;
 };
 
+// bitoff — адрес слова в bit-addressable памяти.
+class BitWordOperand : public Operand {
+ public:
+  explicit BitWordOperand(Word word_address) : word_address_(word_address) {}
+  Word WordAddress() const { return word_address_; }
+  std::string ToString() const override { return std::format("0x{:04X}", word_address_); }
+
+ private:
+  Word word_address_;
+};
+
 // bitaddr — слово в bit-addressable памяти и номер бита в нём.
 class BitOperand : public Operand {
  public:
