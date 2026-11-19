@@ -70,6 +70,28 @@ void CheckStackPointer(test::Checks& checks, IMachine& machine) {
   checks.Equal("SP after high byte write", machine.Read16(kStackPointerAddress), 0xF700);
 }
 
+void CheckCoreRegisters(test::Checks& checks, IMachine& machine) {
+  for (PhysicalAddress address : {0xFF1Cu, 0xFF1Eu}) {
+    const Word fixed = address == 0xFF1C ? 0 : 0xFFFF;
+    machine.Write16(address, ~fixed);
+    machine.Write8(address + 1, 0x5A);
+    checks.Equal("constant register word", machine.Read16(address), fixed);
+    checks.Equal("constant register byte", machine.Read8(address + 1), fixed >> 8);
+  }
+
+  machine.WriteRegister(RegisterId::kMDC, 0x05);
+  machine.WriteRegister(RegisterId::kMDH, 0x1234);
+  checks.Equal("MDH write sets MDRIU", machine.ReadRegister(RegisterId::kMDC), 0x15);
+  (void)machine.Read16(0xFE0C);
+  checks.Equal("MDH read preserves MDRIU", machine.ReadRegister(RegisterId::kMDC), 0x15);
+  (void)machine.Read8(0xFE0F);
+  checks.Equal("MDL byte read clears MDRIU", machine.ReadRegister(RegisterId::kMDC), 0x05);
+  machine.Write8(0xFE0E, 0x5A);
+  checks.Equal("MDL byte write sets MDRIU", machine.ReadRegister(RegisterId::kMDC), 0x15);
+  (void)machine.ReadRegister(RegisterId::kMDL);
+  checks.Equal("MDL word read clears MDRIU", machine.ReadRegister(RegisterId::kMDC), 0x05);
+}
+
 }  // namespace
 
 int main() {
@@ -80,5 +102,6 @@ int main() {
   CheckAlignment(checks, machine, raw);
   CheckFlatMemory(checks, machine);
   CheckStackPointer(checks, machine);
+  CheckCoreRegisters(checks, machine);
   return checks.Result();
 }

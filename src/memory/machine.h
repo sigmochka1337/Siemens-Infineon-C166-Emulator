@@ -17,6 +17,7 @@ class Machine : public IMachine {
   void WriteRegister(RegisterId id, Word value) override;
   CodeAddress GetPC() const override;
   void SetPC(CodeAddress pc) override;
+  void ServiceWatchdog() override;
   void Reset() override;
   PhysicalAddress Resolve(LogicalAddress address) override;
   void LoadBinary(PhysicalAddress address, std::span<const Byte> bytes);
