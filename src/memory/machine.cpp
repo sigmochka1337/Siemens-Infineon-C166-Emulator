@@ -11,8 +11,6 @@
 namespace c166 {
 namespace {
 
-constexpr PhysicalAddress kStackPointerAddress = 0xFE12;
-
 struct SfrMapping {
   RegisterId id;
   PhysicalAddress address;
@@ -22,7 +20,7 @@ constexpr SfrMapping kSfrs[] = {
     {RegisterId::kDPP0, 0xFE00},   {RegisterId::kDPP1, 0xFE02},
     {RegisterId::kDPP2, 0xFE04},   {RegisterId::kDPP3, 0xFE06},
     {RegisterId::kMDH, 0xFE0C},    {RegisterId::kMDL, 0xFE0E},
-    {RegisterId::kCP, 0xFE10},     {RegisterId::kSP, kStackPointerAddress},
+    {RegisterId::kCP, 0xFE10},     {RegisterId::kSP, sfr::kStackPointerAddress},
     {RegisterId::kSTKOV, 0xFE14},  {RegisterId::kSTKUN, 0xFE16},
     {RegisterId::kMDC, 0xFF0E},    {RegisterId::kPSW, 0xFF10},
     {RegisterId::kSYSCON, 0xFF12}, {RegisterId::kTFR, 0xFFAC},
@@ -44,9 +42,9 @@ void Machine::Write8(PhysicalAddress address, Byte value) {
 }
 void Machine::StoreByte(PhysicalAddress address, Byte value) {
   // SP[15:12] are fixed at 1111 and SP[0] is fixed at 0 (C166S V1, pp. 3-61–3-62).
-  if (address == kStackPointerAddress) {
+  if (address == sfr::kStackPointerAddress) {
     value &= 0xFE;
-  } else if (address == kStackPointerAddress + 1) {
+  } else if (address == sfr::kStackPointerAddress + 1) {
     value |= 0xF0;
   }
   memory_.Write8(address, value);
