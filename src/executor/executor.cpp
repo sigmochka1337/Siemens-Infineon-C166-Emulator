@@ -178,7 +178,9 @@ Word Executor::ExecuteInstruction(const Instruction& instruction) {
     if (!operand) throw InvalidInstruction(instruction);
   }
   if (instruction.protection_fault) {
-    if (instruction.mnemonic != Mnemonic::kSrvwdt) throw InvalidInstruction(instruction);
+    if (instruction.mnemonic != Mnemonic::kSrvwdt && instruction.mnemonic != Mnemonic::kDiswdt) {
+      throw InvalidInstruction(instruction);
+    }
     helper.ValidateFormat(0, 4);
     stack_.RequestTrap(tfr::kProtectionFault);
     return 0;
@@ -188,6 +190,10 @@ Word Executor::ExecuteInstruction(const Instruction& instruction) {
   switch (instruction.mnemonic) {
     case Mnemonic::kNop:
       helper.ValidateFormat(0, 2);
+      break;
+    case Mnemonic::kDiswdt:
+      helper.ValidateFormat(0, 4);
+      machine_.DisableWatchdog();
       break;
     case Mnemonic::kSrvwdt:
       helper.ValidateFormat(0, 4);
