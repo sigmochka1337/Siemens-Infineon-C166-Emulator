@@ -17,6 +17,8 @@ class Machine : public IMachine {
   void WriteRegister(RegisterId id, Word value) override;
   CodeAddress GetPC() const override;
   void SetPC(CodeAddress pc) override;
+  void EndInitialization() override;
+  bool ResetOutputHigh() const { return initialization_complete_; }
   void DisableWatchdog() override;
   void ServiceWatchdog() override;
   bool WatchdogResetEnabled() const { return watchdog_reset_enabled_; }
@@ -36,6 +38,7 @@ class Machine : public IMachine {
   static PhysicalAddress SfrAddress(RegisterId id);
   IRawMemory& memory_;
   CodeAddress pc_{};
+  bool initialization_complete_ = false;
   bool watchdog_reset_enabled_ = true;
   bool watchdog_disable_locked_ = false;
 };
