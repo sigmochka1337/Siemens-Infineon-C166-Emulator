@@ -1,0 +1,41 @@
+A166 MACRO ASSEMBLER  THREE_INSTRUCTIONS                                                  11/08/2026 14:28:19 PAGE     1
+
+
+MACRO ASSEMBLER A166 V5.38.2.0
+OBJECT MODULE PLACED IN three_instructions.OBJ
+ASSEMBLER INVOKED BY: C:\Keil_v5\c166\bin\A166.EXE three_instructions.a66
+
+LOC      OBJ             LINE     SOURCE
+
+                            1     $SEGMENTED
+                            2     $CASE
+                            3     $LIST
+                            4     NAME THREE
+                            5     
+                            6     NCODE   CGROUP  ?PR?THREE
+--------                    7     ?PR?THREE       SECTION CODE WORD 'NCODE'
+                            8     
+                            9     main    PROC    NEAR
+00000000 E010              10             MOV     R0, #1
+00000002 E021              11             MOV     R1, #2
+00000004 081E              12             ADD     R1, [R2+]
+                           13     main    ENDP
+                           14     
+--------                   15     ?PR?THREE       ENDS
+                           16             END
+A166 MACRO ASSEMBLER  THREE_INSTRUCTIONS                                                  11/08/2026 14:28:19 PAGE     2
+
+SYMBOL TABLE LISTING
+------ ----- -------
+
+
+N A M E             TYPE   VALUE             I  ATTRIBUTES
+
+?PR?THREE. . . . .  ----   ----              R  SECTION
+NCODE. . . . . . .  ----   ----                 GROUP
+THREE. . . . . . .  ----   ----                 
+main . . . . . . .  NEAR   0H                R  SEC=?PR?THREE
+
+
+
+ASSEMBLY COMPLETE.  0 WARNING(S), 0 ERROR(S)
