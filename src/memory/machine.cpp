@@ -16,6 +16,15 @@ struct SfrMapping {
   PhysicalAddress address;
 };
 
+constexpr PhysicalAddress kZeros = 0xFF1C;
+constexpr PhysicalAddress kOnes = 0xFF1E;
+constexpr PhysicalAddress kMdl = 0xFE0E;
+constexpr PhysicalAddress kMdh = 0xFE0C;
+constexpr PhysicalAddress kMdc = 0xFF0E;
+constexpr Byte kMdrInUse = 1u << 4;
+constexpr PhysicalAddress kWdt = 0xFEAE;
+constexpr PhysicalAddress kWdtCon = 0xFFAE;
+
 constexpr SfrMapping kSfrs[] = {
     {RegisterId::kDPP0, 0xFE00},   {RegisterId::kDPP1, 0xFE02},
     {RegisterId::kDPP2, 0xFE04},   {RegisterId::kDPP3, 0xFE06},
@@ -29,10 +38,17 @@ constexpr SfrMapping kSfrs[] = {
 }  // namespace
 
 Machine::Machine(IRawMemory& memory) : memory_(memory) { Reset(); }
-Byte Machine::Read8(PhysicalAddress address) const { return memory_.Read8(address); }
+Byte Machine::Read8(PhysicalAddress address) const {
+  const auto word = address & ~1u;
+  if (word == kOnes) return 0xFF;
+  if (word == kZeros) return 0;
+  if (word == kMdl) memory_.Write8(kMdc, memory_.Read8(kMdc) & ~kMdrInUse);
+  return memory_.Read8(address);
+}
 void Machine::Write8(PhysicalAddress address, Byte value) {
   const PhysicalAddress word_address = address & ~1u;
-  if (std::ranges::find(kSfrs, word_address, &SfrMapping::address) != std::end(kSfrs)) {
+  if ((word_address >= 0xFE00 && word_address <= 0xFFFF) ||
+      (word_address >= 0xF000 && word_address < 0xF200)) {
     // A byte write clears the other byte of an SFR (C166S V1, pp. 3-5–3-6).
     const Word word = address == word_address ? value : static_cast<Word>(value << 8);
     Write16(word_address, word);
@@ -41,6 +57,9 @@ void Machine::Write8(PhysicalAddress address, Byte value) {
   memory_.Write8(address, value);
 }
 void Machine::StoreByte(PhysicalAddress address, Byte value) {
+  const auto word = address & ~1u;
+  if (word == kOnes || word == kZeros || word == kWdt) return;
+  if (word == kMdl || word == kMdh) memory_.Write8(kMdc, memory_.Read8(kMdc) | kMdrInUse);
   // SP[15:12] are fixed at 1111 and SP[0] is fixed at 0 (C166S V1, pp. 3-61–3-62).
   if (address == sfr::kStackPointerAddress) {
     value &= 0xFE;
@@ -51,8 +70,8 @@ void Machine::StoreByte(PhysicalAddress address, Byte value) {
 }
 Word Machine::Read16(PhysicalAddress address) const {
   CheckWordAddress(address);
-  Byte low = memory_.Read8(address);
-  Byte high = memory_.Read8(address + 1);
+  Byte low = Read8(address);
+  Byte high = Read8(address + 1);
   return static_cast<Word>(low | (high << 8));
 }
 void Machine::Write16(PhysicalAddress address, Word value) {
@@ -109,7 +128,14 @@ PhysicalAddress Machine::Resolve(LogicalAddress address) {
   Word page = ReadRegister(dpp) & 0x03FF;
   return (static_cast<PhysicalAddress>(page) << 14) | (address & 0x3FFF);
 }
+void Machine::ServiceWatchdog() {
+  memory_.Write8(kWdt, 0);
+  memory_.Write8(kWdt + 1, memory_.Read8(kWdtCon + 1));
+}
 void Machine::Reset() {
+  Cpu() = {};
+  Write16(kWdtCon, 0x0081);
+  ServiceWatchdog();
   pc_ = {0, 0};
   WriteRegister(RegisterId::kDPP0, 0);
   WriteRegister(RegisterId::kDPP1, 1);
