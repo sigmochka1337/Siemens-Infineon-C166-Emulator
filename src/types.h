@@ -75,6 +75,11 @@ enum class RegisterId {
   kSYSCON,
   kTFR,
 };
+
+namespace sfr {
+inline constexpr PhysicalAddress kStackPointerAddress = 0xFE12;
+}  // namespace sfr
+
 namespace psw {
 inline constexpr Word kN = 1u << 0;
 inline constexpr Word kC = 1u << 1;
@@ -94,6 +99,8 @@ inline constexpr unsigned kStackSizeShift = 13;
 }  // namespace syscon
 
 namespace tfr {
+inline constexpr Word kIllegalInstructionAccess = 1u << 1;
+inline constexpr Word kIllegalWordOperand = 1u << 2;
 inline constexpr Word kStackOverflow = 1u << 14;
 inline constexpr Word kStackUnderflow = 1u << 13;
 }  // namespace tfr
