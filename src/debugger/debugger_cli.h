@@ -1,6 +1,7 @@
 #pragma once
 #include <iosfwd>
 #include <string>
+#include <vector>
 
 #include "interfaces/debugger.h"
 namespace c166 {
@@ -14,6 +15,8 @@ class DebuggerCli {
   IDebugger& debugger_;
   std::istream& in_;
   std::ostream& out_;
-  void PrintState() const;
+  void PrintState(std::ostream& out) const;
+  std::vector<std::string> history_;
+  bool trace_instructions_ = false;
 };
 }  // namespace c166

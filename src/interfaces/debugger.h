@@ -10,12 +10,15 @@ class IDebugger {
   virtual ~IDebugger() = default;
 
   virtual void Step() = 0;
+  virtual void StepIn() = 0;
+  virtual void StepOut() = 0;
   virtual void Run() = 0;
   virtual void AddBreakpoint(PhysicalAddress address) = 0;
   virtual void RemoveBreakpoint(PhysicalAddress address) = 0;
   virtual std::vector<PhysicalAddress> GetBreakpoints() const = 0;
 
   virtual Snapshot Trace() const = 0;
+  virtual void SetRegister(RegisterId id, Word value) = 0;
   virtual Byte PhysicalRead8(PhysicalAddress address) const = 0;
   virtual Word PhysicalRead16(PhysicalAddress address) const = 0;
   virtual void PhysicalWrite8(PhysicalAddress address, Byte value) = 0;

@@ -208,6 +208,7 @@ struct Instruction {
 };
 
 struct Snapshot {
+  CodeAddress pc;
   Word psw;
   std::vector<std::pair<RegisterId, Word>> registers;
 };

@@ -13,12 +13,15 @@ class Debugger : public IDebugger {
  public:
   Debugger(IMachine& machine, IFetcher& fetcher, IExecutor& executor);
   void Step() override;
+  void StepIn() override;
+  void StepOut() override;
   void Run() override;
   void AddBreakpoint(PhysicalAddress address) override;
   void RemoveBreakpoint(PhysicalAddress address) override;
   std::vector<PhysicalAddress> GetBreakpoints() const override;
   std::string NextInstructionToString() const override;
   Snapshot Trace() const override;
+  void SetRegister(RegisterId id, Word value) override;
   Byte PhysicalRead8(PhysicalAddress address) const override;
   Word PhysicalRead16(PhysicalAddress address) const override;
   void PhysicalWrite8(PhysicalAddress address, Byte value) override;

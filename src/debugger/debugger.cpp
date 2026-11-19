@@ -26,6 +26,24 @@ void Debugger::Step() {
   Instruction instruction = fetcher_.Fetch(pc);
   executor_.Execute(instruction);
 }
+void Debugger::StepIn() {
+  Step();
+}
+void Debugger::StepOut() {
+  Word sp = machine_.ReadRegister(RegisterId::kSP);
+  Word return_ip = machine_.Read16(sp);
+  CodeAddress current_pc = machine_.GetPC();
+  CodeAddress return_pc = {current_pc.segment, return_ip};
+  PhysicalAddress target_address = return_pc.ToPhysicalAddress();
+  bool existed = breakpoints_.contains(target_address);
+  if (!existed) {
+    breakpoints_.insert(target_address);
+  }
+  Run();
+  if (!existed) {
+    breakpoints_.erase(target_address);
+  }
+}
 void Debugger::Run() {
   for (size_t executed = 0; executed < run_limit_; ++executed) {
     PhysicalAddress address = machine_.GetPC().ToPhysicalAddress();
@@ -34,6 +52,9 @@ void Debugger::Run() {
     }
     Step();
   }
+}
+void Debugger::SetRegister(RegisterId id, Word value) {
+  machine_.WriteRegister(id, value);
 }
 Byte Debugger::PhysicalRead8(PhysicalAddress address) const { return machine_.Read8(address); }
 Word Debugger::PhysicalRead16(PhysicalAddress address) const { return machine_.Read16(address); }
@@ -64,6 +85,7 @@ std::string Debugger::NextInstructionToString() const {
 }
 Snapshot Debugger::Trace() const {
   Snapshot snapshot;
+  snapshot.pc = machine_.GetPC();
   snapshot.psw = machine_.ReadRegister(RegisterId::kPSW);
   const RegisterId registr[] = {
       RegisterId::kR0,   RegisterId::kR1,    RegisterId::kR2,    RegisterId::kR3,
