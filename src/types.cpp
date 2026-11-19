@@ -1,4 +1,6 @@
 #include "types.h"
+
+#include "short_register.h"
 namespace c166 {
 std::string MnemonicToString(Mnemonic mnemonic) {
   switch (mnemonic) {
@@ -112,12 +114,18 @@ std::string MnemonicToString(Mnemonic mnemonic) {
       return "bset";
     case Mnemonic::kBClr:
       return "bclr";
+    case Mnemonic::kBfldl:
+      return "bfldl";
+    case Mnemonic::kBfldh:
+      return "bfldh";
     case Mnemonic::kTrap:
       return "trap";
     case Mnemonic::kSrvwdt:
       return "srvwdt";
     case Mnemonic::kDiswdt:
       return "diswdt";
+    case Mnemonic::kEinit:
+      return "einit";
     case Mnemonic::kExts:
       return "exts";
     case Mnemonic::kExtp:
@@ -271,6 +279,7 @@ std::string RegisterIdToString(RegisterId id) {
     case RegisterId::kTFR:
       return "TFR";
     default:
+      if (IsShortSfr(id)) return std::format("0x{:04X}", 0xFE00 + 2 * ShortAddress(id));
       return "unknown";
   }
 }
@@ -286,7 +295,7 @@ std::string Instruction::ToString() const {
 
   for (const auto& operand : operands) {
     res += first ? " " : ", ";
-    res += operand->ToString();
+    res += operand ? operand->ToString() : "<missing>";
     first = false;
   }
   return res;

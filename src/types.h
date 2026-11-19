@@ -75,6 +75,11 @@ enum class RegisterId {
   kSYSCON,
   kTFR,
 };
+
+namespace sfr {
+inline constexpr PhysicalAddress kStackPointerAddress = 0xFE12;
+}  // namespace sfr
+
 namespace psw {
 inline constexpr Word kN = 1u << 0;
 inline constexpr Word kC = 1u << 1;
@@ -94,8 +99,16 @@ inline constexpr unsigned kStackSizeShift = 13;
 }  // namespace syscon
 
 namespace tfr {
+inline constexpr Word kExternalBus = 1u;
+inline constexpr Word kProtectionFault = 1u << 3;
+inline constexpr Word kUndefinedOpcode = 1u << 7;
+inline constexpr Word kNmi = 1u << 15;
+inline constexpr Word kIllegalInstructionAccess = 1u << 1;
+inline constexpr Word kIllegalWordOperand = 1u << 2;
 inline constexpr Word kStackOverflow = 1u << 14;
 inline constexpr Word kStackUnderflow = 1u << 13;
+inline constexpr Word kClassB = kExternalBus | kIllegalInstructionAccess | kIllegalWordOperand |
+                                kProtectionFault | kUndefinedOpcode;
 }  // namespace tfr
 
 enum class Mnemonic {
@@ -166,6 +179,9 @@ enum class Mnemonic {
   kMovBS,
   kMovBZ,
   kDiswdt,
+  kBfldl,
+  kBfldh,
+  kEinit,
 };
 
 // 4-битное поле условия C166. Имена — канонические; ассемблерные алиасы
@@ -192,7 +208,6 @@ enum class ConditionCode : std::uint8_t {
 std::string ConditionCodeToString(ConditionCode condition);
 std::string MnemonicToString(Mnemonic mnemonic);
 std::string RegisterIdToString(RegisterId id);
-std::string ConditionCodeToString(ConditionCode condition);
 class Operand {
  public:
   virtual ~Operand() = default;
@@ -204,6 +219,7 @@ struct Instruction {
   std::optional<ConditionCode> condition;
   std::vector<std::unique_ptr<Operand>> operands;
   Byte size = 0;
+  bool protection_fault = false;
 
   std::string ToString() const;
 };
