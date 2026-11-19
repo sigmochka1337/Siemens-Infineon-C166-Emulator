@@ -17,13 +17,17 @@ class Machine : public IMachine {
   void WriteRegister(RegisterId id, Word value) override;
   CodeAddress GetPC() const override;
   void SetPC(CodeAddress pc) override;
+  void DisableWatchdog() override;
   void ServiceWatchdog() override;
+  bool WatchdogResetEnabled() const { return watchdog_reset_enabled_; }
+  bool WatchdogCounterEnabled() const;
   void Reset() override;
   PhysicalAddress Resolve(LogicalAddress address) override;
   void LoadBinary(PhysicalAddress address, std::span<const Byte> bytes);
   void LoadBinaryFile(PhysicalAddress address, const std::filesystem::path& path);
 
  private:
+  void ReloadWatchdog();
   static void CheckWordAddress(PhysicalAddress address);
   void StoreByte(PhysicalAddress address, Byte value);
   PhysicalAddress RegisterAddress(RegisterId id) const;
@@ -32,5 +36,7 @@ class Machine : public IMachine {
   static PhysicalAddress SfrAddress(RegisterId id);
   IRawMemory& memory_;
   CodeAddress pc_{};
+  bool watchdog_reset_enabled_ = true;
+  bool watchdog_disable_locked_ = false;
 };
 }  // namespace c166

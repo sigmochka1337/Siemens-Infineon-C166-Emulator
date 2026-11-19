@@ -118,6 +118,8 @@ std::string MnemonicToString(Mnemonic mnemonic) {
       return "trap";
     case Mnemonic::kSrvwdt:
       return "srvwdt";
+    case Mnemonic::kDiswdt:
+      return "diswdt";
     case Mnemonic::kExts:
       return "exts";
     case Mnemonic::kExtp:
