@@ -159,4 +159,25 @@ bool BitProcessor::SetBit(const Operand* dst, bool value) {
   return true;
 }
 
+bool BitProcessor::ModifyBitField(bool high_byte, const Operand* dst, const Operand* mask,
+                                  const Operand* data) {
+  const auto* target = dynamic_cast<const BitWordOperand*>(dst);
+  const auto* mask_operand = dynamic_cast<const ImmediateOperand*>(mask);
+  const auto* data_operand = dynamic_cast<const ImmediateOperand*>(data);
+  if (!target || !mask_operand || !data_operand || mask_operand->Value() > 0xFF ||
+      data_operand->Value() > 0xFF) {
+    return false;
+  }
+  const auto address = ResolveBitWordAddress(machine_, target->WordAddress());
+  if (!address) return false;
+
+  const unsigned shift = high_byte ? 8 : 0;
+  const Word field_mask = static_cast<Word>(mask_operand->Value() << shift);
+  const Word field_data = static_cast<Word>(data_operand->Value() << shift);
+  const Word result = (machine_.Read16(*address) & ~field_mask) | (field_data & field_mask);
+  SetResultFlags(result, 0x8000, 0);
+  machine_.Write16(*address, result);
+  return true;
+}
+
 }  // namespace c166

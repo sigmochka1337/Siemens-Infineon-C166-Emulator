@@ -178,7 +178,8 @@ Word Executor::ExecuteInstruction(const Instruction& instruction) {
     if (!operand) throw InvalidInstruction(instruction);
   }
   if (instruction.protection_fault) {
-    if (instruction.mnemonic != Mnemonic::kSrvwdt && instruction.mnemonic != Mnemonic::kDiswdt) {
+    if (instruction.mnemonic != Mnemonic::kSrvwdt && instruction.mnemonic != Mnemonic::kDiswdt &&
+        instruction.mnemonic != Mnemonic::kEinit) {
       throw InvalidInstruction(instruction);
     }
     helper.ValidateFormat(0, 4);
@@ -190,6 +191,10 @@ Word Executor::ExecuteInstruction(const Instruction& instruction) {
   switch (instruction.mnemonic) {
     case Mnemonic::kNop:
       helper.ValidateFormat(0, 2);
+      break;
+    case Mnemonic::kEinit:
+      helper.ValidateFormat(0, 4);
+      machine_.EndInitialization();
       break;
     case Mnemonic::kDiswdt:
       helper.ValidateFormat(0, 4);
@@ -377,6 +382,15 @@ Word Executor::ExecuteInstruction(const Instruction& instruction) {
       if (bits_.SetBit(helper[0], instruction.mnemonic == Mnemonic::kBSet)) break;
       throw InvalidInstruction(instruction);
     }
+
+    case Mnemonic::kBfldl:
+    case Mnemonic::kBfldh:
+      helper.ValidateFormat(3, 4);
+      if (bits_.ModifyBitField(instruction.mnemonic == Mnemonic::kBfldh, helper[0], helper[1],
+                               helper[2])) {
+        break;
+      }
+      throw InvalidInstruction(instruction);
 
     case Mnemonic::kPush: {
       helper.ValidateFormat(1, 2);

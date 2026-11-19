@@ -13,6 +13,7 @@ class BitProcessor {
   bool Complement(Mnemonic operation, const Operand* dst);
   bool Shift(Mnemonic operation, const Operand* dst, const Operand* count);
   bool SetBit(const Operand* dst, bool value);
+  bool ModifyBitField(bool high_byte, const Operand* dst, const Operand* mask, const Operand* data);
 
  private:
   Word LogicalResult(Mnemonic operation, Word left, Word right, bool byte);

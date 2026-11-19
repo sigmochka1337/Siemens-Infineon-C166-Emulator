@@ -25,13 +25,13 @@ struct AddressedBit {
   }
 };
 
-inline std::optional<AddressedBit> ReadAddressedBit(const IMachine& machine, const Operand* src) {
-  const auto* bit = dynamic_cast<const BitOperand*>(src);
-  if (!bit || bit->Bit() > 15 || (bit->WordAddress() & 1) != 0) return std::nullopt;
+inline std::optional<PhysicalAddress> ResolveBitWordAddress(const IMachine& machine,
+                                                            Word word_address) {
+  if ((word_address & 1) != 0) return std::nullopt;
 
-  // V1 table 3-12. BitOperand carries the decoded word address; bitoff F0..FF
+  // V1 table 3-12. The operand carries the decoded word address; bitoff F0..FF
   // appears as FFE0..FFFE and always selects R0..R15 in the current context.
-  PhysicalAddress address = bit->WordAddress();
+  PhysicalAddress address = word_address;
   if (address >= 0xFFE0) {
     address = machine.ReadRegister(RegisterId::kCP) + (address - 0xFFE0);
   } else {
@@ -45,7 +45,15 @@ inline std::optional<AddressedBit> ReadAddressedBit(const IMachine& machine, con
       if (address < cp || address > cp + 30) return std::nullopt;
     }
   }
-  return AddressedBit{address, machine.Read16(address), static_cast<Word>(1u << bit->Bit())};
+  return address;
+}
+
+inline std::optional<AddressedBit> ReadAddressedBit(const IMachine& machine, const Operand* src) {
+  const auto* bit = dynamic_cast<const BitOperand*>(src);
+  if (!bit || bit->Bit() > 15) return std::nullopt;
+  const auto address = ResolveBitWordAddress(machine, bit->WordAddress());
+  if (!address) return std::nullopt;
+  return AddressedBit{*address, machine.Read16(*address), static_cast<Word>(1u << bit->Bit())};
 }
 
 }  // namespace c166
