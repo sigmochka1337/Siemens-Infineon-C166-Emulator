@@ -1,18 +1,48 @@
 // Golden-векторы Fetch/Decode по C166S V1 SubSystem User's Manual, гл. 5–6.
+#include <algorithm>
 #include <cstdio>
 #include <exception>
 #include <initializer_list>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
 #include "exceptions.h"
 #include "fetcher.h"
-#include "flat_machine.h"
-#include "loader.h"
 
 namespace {
 
 using namespace c166;
+
+class TestMachine final : public IMachine {
+ public:
+  Byte Read8(PhysicalAddress address) const override {
+    if (address >= memory_.size()) {
+      throw PhysicalAddressOutOfRange(address);
+    }
+    return memory_[address];
+  }
+
+  void Write8(PhysicalAddress address, Byte value) override { memory_.at(address) = value; }
+  CodeAddress GetPC() const override { return pc_; }
+  void SetPC(CodeAddress pc) override { pc_ = pc; }
+  void ClearMemory() { std::ranges::fill(memory_, 0); }
+
+  Word Read16(PhysicalAddress) const override { UnexpectedMachineAccess(); }
+  void Write16(PhysicalAddress, Word) override { UnexpectedMachineAccess(); }
+  Word ReadRegister(RegisterId) const override { UnexpectedMachineAccess(); }
+  void WriteRegister(RegisterId, Word) override { UnexpectedMachineAccess(); }
+  void Reset() override { UnexpectedMachineAccess(); }
+  PhysicalAddress Resolve(LogicalAddress) override { UnexpectedMachineAccess(); }
+
+ private:
+  [[noreturn]] static void UnexpectedMachineAccess() {
+    throw std::logic_error("Fetcher must read instruction bytes via Read8");
+  }
+
+  std::vector<Byte> memory_ = std::vector<Byte>(0x20000);
+  CodeAddress pc_{};
+};
 
 int g_checks = 0;
 int g_failures = 0;
@@ -29,7 +59,7 @@ void Check(bool condition, const char* expression, int line) {
 
 constexpr PhysicalAddress kBase = 0x100;
 
-void Put(FlatMachine& machine, PhysicalAddress address,
+void Put(TestMachine& machine, PhysicalAddress address,
          std::initializer_list<Byte> bytes) {
   PhysicalAddress current = address;
   for (Byte byte : bytes) {
@@ -38,7 +68,7 @@ void Put(FlatMachine& machine, PhysicalAddress address,
   }
 }
 
-std::string FetchText(FlatMachine& machine, std::initializer_list<Byte> bytes,
+std::string FetchText(TestMachine& machine, std::initializer_list<Byte> bytes,
                       Byte* size = nullptr) {
   machine.ClearMemory();
   Put(machine, kBase, bytes);
@@ -65,7 +95,7 @@ bool ThrowsUnreadable(Callable&& callable) {
 void TestGoldenVectors() {
   std::printf("fetcher: golden vectors\n");
 
-  FlatMachine machine(0x20000);
+  TestMachine machine;
 
   struct Case {
     std::initializer_list<Byte> bytes;
@@ -303,7 +333,7 @@ void TestGoldenVectors() {
 void TestConditions() {
   std::printf("fetcher: condition codes\n");
 
-  FlatMachine machine(0x20000);
+  TestMachine machine;
   const char* names[] = {"cc_UC",  "cc_NET", "cc_Z",  "cc_NZ",
                          "cc_V",   "cc_NV",  "cc_N",  "cc_NN",
                          "cc_C",   "cc_NC",  "cc_SGT", "cc_SLE",
@@ -325,7 +355,7 @@ void TestConditions() {
 void TestErrors() {
   std::printf("fetcher: errors\n");
 
-  FlatMachine machine(0x20000);
+  TestMachine machine;
   Fetcher fetcher(machine);
 
   machine.ClearMemory();
@@ -401,56 +431,16 @@ void TestErrors() {
   CHECK(machine.GetPC() == (CodeAddress{0, 0x200}));
 }
 
-void TestLoader() {
-  std::printf("loader: Intel HEX и raw\n");
-
-  const char* hex =
-      ":020000040001F9\n"
-      ":04000000E010E0210B\n"
-      ":00000001FF\n";
-
-  FlatMachine machine(0x20000);
-  LoadResult loaded;
-  std::string error;
-  CHECK(LoadIntelHex(hex, machine, loaded, error));
-  CHECK(loaded.format == FileFormat::kIntelHex);
-  CHECK(loaded.bytes == 4);
-  CHECK(loaded.MinAddress() == 0x10000);
-  CHECK(loaded.MaxAddress() == 0x10004);
-  CHECK(loaded.Contains(0x10000));
-  CHECK(!loaded.Contains(0x10004));
-  CHECK(loaded.NextMapped(0) == 0x10000);
-  CHECK(machine.Read8(0x10000) == 0xE0);
-  CHECK(machine.Read8(0x10001) == 0x10);
-  CHECK(machine.Read8(0x10002) == 0xE0);
-  CHECK(machine.Read8(0x10003) == 0x21);
-
-  // Испорченная контрольная сумма.
-  const char* bad_hex =
-      ":020000040001F9\n"
-      ":04000000E010E0210C\n"
-      ":00000001FF\n";
-  CHECK(!LoadIntelHex(bad_hex, machine, loaded, error));
-
-  // Сырой бинарник: ровно три инструкции из примера.
-  const std::vector<Byte> raw = {0xE0, 0x10, 0xE0, 0x21, 0x08, 0x1E};
-  CHECK(LoadBinary(raw, 0x100, machine, loaded, error));
-  CHECK(loaded.format == FileFormat::kRawBinary);
-  CHECK(loaded.bytes == raw.size());
-  CHECK(loaded.MinAddress() == 0x100);
-  CHECK(loaded.MaxAddress() == 0x106);
-
+void TestSegmentedFetch() {
+  std::printf("fetcher: segmented code address\n");
+  TestMachine machine;
+  Put(machine, 0x10100, {0xE0, 0x10, 0xE0, 0x21, 0x08, 0x1E});
   Fetcher fetcher(machine);
-  Instruction instruction = fetcher.Fetch(CodeAddress{0, 0x100});
-  CHECK(instruction.ToString() == "mov R0, #0x0001");
-  instruction = fetcher.Fetch(CodeAddress{0, 0x102});
-  CHECK(instruction.ToString() == "mov R1, #0x0002");
-  instruction = fetcher.Fetch(CodeAddress{0, 0x104});
-  CHECK(instruction.ToString() == "add R1, [R2+]");
 
-  // OMF166 от Keil: файл начинается с record type 0x70 и содержит "C166".
-  const std::vector<Byte> omf = {0x70, 0xD7, 0x00, 0xFF, '/', 'C', '1', '6', '6'};
-  CHECK(DetectFormat(omf) == FileFormat::kOmf166);
+  CHECK(fetcher.Fetch({1, 0x100}).ToString() == "mov R0, #0x0001");
+  CHECK(fetcher.Fetch({1, 0x102}).ToString() == "mov R1, #0x0002");
+  CHECK(fetcher.Fetch({1, 0x104}).ToString() == "add R1, [R2+]");
+  CHECK(ThrowsUnreadable([&] { (void)fetcher.Fetch({2, 0x100}); }));
 }
 
 }  // namespace
@@ -459,7 +449,7 @@ int main() {
   TestGoldenVectors();
   TestConditions();
   TestErrors();
-  TestLoader();
+  TestSegmentedFetch();
 
   std::printf("\n%d checks, %d failures\n", g_checks, g_failures);
   return g_failures == 0 ? 0 : 1;

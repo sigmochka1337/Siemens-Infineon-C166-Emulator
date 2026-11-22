@@ -12,21 +12,30 @@ file(GLOB_RECURSE C166_SOURCES CONFIGURE_DEPENDS
 
 add_executable(c166 ${C166_SOURCES})
 
-target_include_directories(c166
-    PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-)
-
-if(MSVC)
-    target_compile_options(c166 PRIVATE /W4 /permissive-)
-else()
-    target_compile_options(c166 PRIVATE
-        -Wall
-        -Wextra
-        -fsanitize=address,undefined
-        -fno-omit-frame-pointer
+include(CTest)
+set(C166_TARGETS c166)
+if(BUILD_TESTING)
+    add_executable(c166_fetcher_test
+        tests/fetcher_test.cpp
+        src/fetcher.cpp
+        src/operands.cpp
+        src/types.cpp
     )
-    target_link_options(c166 PRIVATE
-        -fsanitize=address,undefined
-    )
+    add_test(NAME fetcher COMMAND c166_fetcher_test)
+    list(APPEND C166_TARGETS c166_fetcher_test)
 endif()
+
+foreach(target IN LISTS C166_TARGETS)
+    target_include_directories(${target} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+    if(MSVC)
+        target_compile_options(${target} PRIVATE /W4 /permissive-)
+    else()
+        target_compile_options(${target} PRIVATE
+            -Wall
+            -Wextra
+            -fsanitize=address,undefined
+            -fno-omit-frame-pointer
+        )
+        target_link_options(${target} PRIVATE -fsanitize=address,undefined)
+    endif()
+endforeach()
