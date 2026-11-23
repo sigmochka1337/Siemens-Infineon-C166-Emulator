@@ -20,13 +20,13 @@ target_include_directories(c166
 if(MSVC)
     target_compile_options(c166 PRIVATE /W4 /permissive-)
 else()
-    target_compile_options(c166 PRIVATE
-        -Wall
-        -Wextra
-        -fsanitize=address,undefined
-        -fno-omit-frame-pointer
-    )
-    target_link_options(c166 PRIVATE
-        -fsanitize=address,undefined
-    )
+    target_compile_options(c166 PRIVATE -Wall -Wextra)
+
+    if(NOT MINGW)
+        target_compile_options(c166 PRIVATE
+            -fsanitize=address,undefined
+            -fno-omit-frame-pointer
+        )
+        target_link_options(c166 PRIVATE -fsanitize=address,undefined)
+    endif()
 endif()
